@@ -90,7 +90,7 @@ func registerService(service serviceDefinition) ([]ResolvedDependency, error) {
 	}
 
 	// create a zmq client socket to the system manager
-	client, err := zmq.NewSocket(zmq.REP)
+	client, err := zmq.NewSocket(zmq.REQ)
 	if err != nil {
 		return nil, fmt.Errorf("Could not open ZMQ connection to system manager: %s", err)
 	}
