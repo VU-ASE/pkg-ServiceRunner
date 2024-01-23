@@ -121,9 +121,14 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction) {
 	}
 
 	// Receive the initial tuning state
-	tuningState, err := requestTuningState(systemManagerDetails)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error requesting tuning state")
+	tuningState := &protobuf_msgs.TuningState{}
+	if strings.ToLower(service.Name) == "systemmanager" {
+		log.Info().Msg("Tuning state skipped. This is the system manager.")
+	} else {
+		tuningState, err = requestTuningState(systemManagerDetails)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Error requesting tuning state")
+		}
 	}
 
 	log.Info().Str("service", service.Name).Msg("Starting service")
@@ -139,7 +144,7 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction) {
 		err = main(serviceInformation, tuningState)
 	}
 
-	if !*noLiveTuning {
+	if !*noLiveTuning && strings.ToLower(service.Name) == "systemmanager" {
 		// Listen for tuning state updates, and callback when a new tuning state is received
 		go listenForTuningBroadcasts(onTuningState, systemManagerDetails)
 	}
