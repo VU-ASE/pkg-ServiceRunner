@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
+	protobuf_msgs "github.com/VU-ASE/pkg-ServiceRunner/include"
 	customerrors "github.com/VU-ASE/pkg-ServiceRunner/src/errors"
-	protobuf_msgs "github.com/VU-ASE/pkg-ServiceRunner/src/messages"
 	zmq "github.com/pebbe/zmq4"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
@@ -279,5 +279,4 @@ func registerService(service serviceDefinition) ([]ResolvedDependency, error) {
 		log.Info().Str("service", service.Name).Msg("No dependencies to resolve")
 		return make([]ResolvedDependency, 0), nil
 	}
-
 }
