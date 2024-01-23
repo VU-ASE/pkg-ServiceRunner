@@ -25,7 +25,7 @@ type TuningState struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Timestamp         uint64                   `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Timestamp         uint64                   `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"` // increased when the state changes, used to prevent unnecessary updates
 	DynamicParameters []*TuningState_Parameter `protobuf:"bytes,2,rep,name=dynamicParameters,proto3" json:"dynamicParameters,omitempty"`
 }
 

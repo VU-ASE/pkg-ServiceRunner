@@ -12,14 +12,15 @@ import (
 // The service.yaml file is used to describe the service and its dependencies and needs to follow this structure.
 //
 
-type ServiceDefinition struct {
+type serviceDefinition struct {
 	Name         string       `yaml:"name"`
 	Description  string       `yaml:"description"`
-	Dependencies []Dependency `yaml:"dependencies"`
-	Outputs      []Output     `yaml:"outputs"`
+	Dependencies []dependency `yaml:"dependencies"`
+	Outputs      []output     `yaml:"outputs"`
 }
 
-type Dependency struct {
+// A dependency definition as it should be included in the yaml file
+type dependency struct {
 	// name of the service that this service depends on
 	ServiceName string `yaml:"service"`
 	// the name of the output that this service needs from the dependency
@@ -27,14 +28,14 @@ type Dependency struct {
 }
 
 // The output that this service will produce
-type Output struct {
+type output struct {
 	// the name of the output that this service will produce
 	Name string `yaml:"name"`
 	// the address of the output that this service will produce
 	Address string `yaml:"address"`
 }
 
-func validateServiceDefinition(serviceDefinition ServiceDefinition) error {
+func validateServiceDefinition(serviceDefinition serviceDefinition) error {
 	if serviceDefinition.Name == "" {
 		return fmt.Errorf("Service name is empty")
 	} else if serviceDefinition.Description == "" {
@@ -81,22 +82,22 @@ func validateServiceDefinition(serviceDefinition ServiceDefinition) error {
 	return nil
 }
 
-func parseServiceDefinition(yamlString string) (ServiceDefinition, error) {
-	serviceDefinition := ServiceDefinition{}
+func parseServiceDefinition(yamlString string) (serviceDefinition, error) {
+	serviceDefinition := serviceDefinition{}
 	err := yaml.Unmarshal([]byte(yamlString), &serviceDefinition)
 	if err != nil {
-		return ServiceDefinition{}, err
+		return serviceDefinition, err
 	}
 
 	validationError := validateServiceDefinition(serviceDefinition)
 	return serviceDefinition, validationError
 }
 
-func parseServiceDefinitionFromYaml(path string) (ServiceDefinition, error) {
+func parseServiceDefinitionFromYaml(path string) (serviceDefinition, error) {
 	// Read file
 	yaml, err := os.ReadFile(path)
 	if err != nil {
-		return ServiceDefinition{}, err
+		return serviceDefinition{}, err
 	}
 	return parseServiceDefinition(string(yaml))
 }

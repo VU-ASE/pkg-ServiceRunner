@@ -11,10 +11,10 @@ import (
 )
 
 // The main function to run
-type MainFunction func() error
+type MainFunction func(serviceInformation ResolvedService) error
 
 // Configures log level and output
-func setupLogging(debug bool, outputPath string, service ServiceDefinition) {
+func setupLogging(debug bool, outputPath string, service serviceDefinition) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMs
 	// Log to stderr or to file
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
@@ -51,25 +51,36 @@ func Run(main MainFunction) {
 	flag.Parse()
 
 	// Parse the service definition
-	service, err := ParseServiceDefinitionFromYaml(*serviceYamlPath)
+	service, err := parseServiceDefinitionFromYaml(*serviceYamlPath)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error parsing service definition")
 	}
 
 	// Set up logging
 	setupLogging(*debug, *output, service)
-	log.Info().Str("service", service.Name).Msg("Starting service")
 
+	// Register the service with the system manager
+	resolvedDependencies, err := registerService(service)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error registering service")
+	}
+	serviceInformation := ResolvedService{
+		Name:         service.Name,
+		Pid:          os.Getpid(),
+		Dependencies: resolvedDependencies,
+	}
+
+	log.Info().Str("service", service.Name).Msg("Starting service")
 	backoff := 1
 	log.Info().Msg("Starting service")
-	err = main()
+	err = main(serviceInformation)
 	if *retries > 0 {
 		*retries--
 		backoff *= 2
 		log.Warn().Err(err).Int("retries left", *retries).Int("backoff", backoff).Msg("Service quit unexpectedly. Retrying... ")
 		time.Sleep(time.Duration(backoff) * time.Second)
 		log.Info().Msg("Starting service")
-		err = main()
+		err = main(serviceInformation)
 	}
 
 	if err != nil {
