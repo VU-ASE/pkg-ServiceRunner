@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -41,7 +42,7 @@ func setupLogging(debug bool, outputPath string, service serviceDefinition) {
 	log.Info().Msg("Logger was set up")
 }
 
-// Used to start the program with the correct arguments
+// Used to start the program with the correct arguments and logging, with service discovery registration and all dependencies resolved
 func Run(main MainFunction) {
 	// Parse args
 	debug := flag.Bool("debug", false, "show all logs (including debug)")
@@ -59,15 +60,26 @@ func Run(main MainFunction) {
 	// Set up logging
 	setupLogging(*debug, *output, service)
 
-	// Register the service with the system manager
-	resolvedDependencies, err := registerService(service)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error registering service")
+	// Try registering the service with the system manager
+	resolvedDependencies := make([]ResolvedDependency, 0)
+
+	// Don't register the system manager itself
+	if strings.ToLower(service.Name) == "systemmanager" {
+		log.Info().Msg("Service registration skipped. This is the system manager.")
+	} else {
+		// Register the service with the system manager
+		resolvedDependencies, err = registerService(service)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Error registering service")
+		}
 	}
+
+	// Callback information passed back to the service
 	serviceInformation := ResolvedService{
 		Name:         service.Name,
 		Pid:          os.Getpid(),
 		Dependencies: resolvedDependencies,
+		Outputs:      service.Outputs,
 	}
 
 	log.Info().Str("service", service.Name).Msg("Starting service")
