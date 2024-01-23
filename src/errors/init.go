@@ -9,3 +9,4 @@ import "fmt"
 
 // Error returned when a dependency is not exposed by the service
 var OutputNotExposed = fmt.Errorf("Service does not expose requested output")
+var ServiceNotRunning = fmt.Errorf("Service is not running (yet)")

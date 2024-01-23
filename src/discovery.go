@@ -1,6 +1,7 @@
 package servicerunner
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -14,6 +15,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// Checks if all depdnencies are resolved by checking if the list of resolved dependencies contains each dependency
 func allDependenciesResolved(service serviceDefinition, resolvedDependencies []ResolvedDependency) bool {
 	if len(service.Dependencies) == 0 {
 		return true
@@ -22,7 +24,7 @@ func allDependenciesResolved(service serviceDefinition, resolvedDependencies []R
 	for _, dependency := range service.Dependencies {
 		found := false
 		for _, resolvedDependency := range resolvedDependencies {
-			if dependency.ServiceName == resolvedDependency.ServiceName && dependency.OutputName == resolvedDependency.OutputName {
+			if strings.ToLower(dependency.ServiceName) == strings.ToLower(resolvedDependency.ServiceName) && strings.ToLower(dependency.OutputName) == strings.ToLower(resolvedDependency.OutputName) {
 				found = true
 			}
 		}
@@ -54,31 +56,6 @@ func getSystemManagerDetails() (SystemManagerDetails, error) {
 		serverAddress:    serverAddr,
 		publisherAddress: pubAddr,
 	}, nil
-}
-
-func extractOutputFromServiceStatus(status *protobuf_msgs.ServiceStatus, dependency dependency) (ResolvedDependency, error) {
-	service := status.GetService()
-	if service == nil {
-		return ResolvedDependency{}, fmt.Errorf("Received empty service status")
-	}
-
-	// check if the service exposes the output that we need
-	endpoints := service.GetEndpoints()
-	if endpoints == nil {
-		return ResolvedDependency{}, fmt.Errorf("Received empty service endpoints")
-	}
-
-	for _, endpoint := range endpoints {
-		if endpoint.GetName() == dependency.OutputName {
-			return ResolvedDependency{
-				ServiceName: dependency.ServiceName,
-				OutputName:  dependency.OutputName,
-				Address:     endpoint.GetAddress(),
-			}, nil
-		}
-	}
-
-	return ResolvedDependency{}, customerrors.OutputNotExposed
 }
 
 // Will contact the discovery service to get the addresses of each dependency and register this service with the service discovery service (the system manager)
@@ -198,103 +175,178 @@ func registerService(service serviceDefinition) ([]ResolvedDependency, error) {
 	// registration was successfull!
 	log.Info().Str("service", service.Name).Msg("Service registration successful")
 
+	// Resolve dependencies, if there are any
+	return resolveDependencies(service, client)
+}
+
+func resolveDependencies(service serviceDefinition, serverSocket *zmq.Socket) ([]ResolvedDependency, error) {
 	resolvedDependencies := make([]ResolvedDependency, 0)
-	// Now attempt to resolve dependencies, if any
-	if len(service.Dependencies) > 0 {
-		log.Info().Str("service", service.Name).Int("dependencies to resolve", len(service.Dependencies)).Msg("Resolving dependencies")
-		for !allDependenciesResolved(service, resolvedDependencies) {
-			// create a list all unique *services* (not endpoints) that we depend on and that are not yet resolved
-			uniqueServiceDependencies := make([]string, 0)
-			for _, dependency := range service.Dependencies {
-				if !slices.Contains(uniqueServiceDependencies, dependency.ServiceName) && !slices.ContainsFunc(resolvedDependencies, func(dep ResolvedDependency) bool {
-					return strings.ToLower(dep.ServiceName) == strings.ToLower(dependency.ServiceName) && strings.ToLower(dep.OutputName) == strings.ToLower(dependency.OutputName)
-				}) {
-					uniqueServiceDependencies = append(uniqueServiceDependencies, dependency.ServiceName)
-				}
-			}
-
-			// resolve each service (sequentially)
-			for _, serviceName := range uniqueServiceDependencies {
-				// create a request message
-				reqMsg := protobuf_msgs.SystemManagerMessage{
-					Msg: &protobuf_msgs.SystemManagerMessage_ServiceInformationRequest{
-						ServiceInformationRequest: &protobuf_msgs.ServiceInformationRequest{
-							Requested: &protobuf_msgs.ServiceIdentifier{
-								Name: serviceName,
-								Pid:  1, // does not matter
-							},
-						},
-					},
-				}
-				// convert the message to bytes
-				msgBytes, err := proto.Marshal(&reqMsg)
-				if err != nil {
-					log.Err(err).Msg("Error marshalling protobuf message")
-					return nil, err
-				}
-				// send the request to the system manager
-				_, err = client.SendBytes(msgBytes, 0)
-				if err != nil {
-					return nil, err
-				}
-				log.Info().Str("service", service.Name).Str("dependency", serviceName).Msg("Requesting dependency information from system manager")
-				gotReply := false
-				go func() {
-					for {
-						// print a idle message every 5 seconds, until were done
-						if gotReply {
-							return
-						}
-						log.Info().Str("service", service.Name).Str("dependency", serviceName).Msg("Waiting for dependency response from system manager")
-						time.Sleep(5 * time.Second)
-					}
-				}()
-				// wait for a response from the system manager
-				resBytes, err := client.RecvBytes(0)
-				gotReply = true
-				if err != nil {
-					return nil, err
-				}
-				// the response must be of type ServiceStatus (see messages/servicediscovery.proto)
-				response := protobuf_msgs.SystemManagerMessage{}
-				responseServiceStatus := response.GetServiceStatus()
-				if responseServiceStatus == nil {
-					return nil, fmt.Errorf("Received empty response from system manager")
-				}
-				err = proto.Unmarshal(resBytes, &response)
-				if err != nil {
-					log.Warn().Str("service", service.Name).Str("dependency", serviceName).Err(err).Msg("Could not parse response from system manager. Assuming that the service we are depending on is not yet registered. Will retry in 5 seconds")
-					time.Sleep(5 * time.Second)
-					continue
-				} else if responseServiceStatus.Status.Enum() != protobuf_msgs.ServiceStatus_RUNNING.Enum() {
-					log.Warn().Str("service", service.Name).Str("dependency", serviceName).Msg("Dependency is not running yet. Will retry in 5 seconds")
-					time.Sleep(5 * time.Second)
-					continue
-				}
-				// check if this service exposes the outputs that we need
-				for _, dependency := range service.Dependencies {
-					if strings.ToLower(dependency.ServiceName) == strings.ToLower(serviceName) {
-						// does the service expose our dependency as an output?
-						resolvedDependency, err := extractOutputFromServiceStatus(responseServiceStatus, dependency)
-						if err != nil {
-							log.Err(err).Msg("Error extracting dependency from service status")
-							return nil, err
-						}
-						// Add the resolved dependency to the list of resolved dependencies, if it is not already in there
-						if !slices.ContainsFunc(resolvedDependencies, func(dep ResolvedDependency) bool {
-							return strings.ToLower(dep.ServiceName) == strings.ToLower(resolvedDependency.ServiceName) && strings.ToLower(dep.OutputName) == strings.ToLower(resolvedDependency.OutputName)
-						}) {
-							resolvedDependencies = append(resolvedDependencies, resolvedDependency)
-						}
-					}
-
-				}
-
-			}
-		}
+	// do we even have dependencies?
+	if len(service.Dependencies) <= 0 {
+		log.Info().Msg("No dependencies to resolve")
 		return resolvedDependencies, nil
-	} else {
-		log.Info().Str("service", service.Name).Msg("No dependencies to resolve")
-		return make([]ResolvedDependency, 0), nil
 	}
+
+	// Now attempt to resolve dependencies, if any
+	log.Info().Str("service", service.Name).Int("dependencies to resolve", len(service.Dependencies)).Msg("Resolving dependencies")
+	for !allDependenciesResolved(service, resolvedDependencies) {
+		// create a list all unique *services* (not endpoints) that we depend on and that are not yet resolved
+		uniqueServiceDependencies := extractUniqueServices(service.Dependencies, resolvedDependencies)
+
+		// resolve each service (sequentially)
+		for _, serviceName := range uniqueServiceDependencies {
+			dependencyInfo, err := requestServiceInformation(serviceName, serverSocket)
+			if err != nil {
+				if errors.Is(err, customerrors.ServiceNotRunning) {
+					log.Warn().Str("dependency", serviceName).Msg("Dependency is not running (yet), will retry in 3 seconds")
+					time.Sleep(3 * time.Second)
+					continue
+				} else {
+					log.Err(err).Str("dependency", serviceName).Msg("Error resolving dependency")
+					return nil, err
+				}
+			}
+
+			// fill the list of resolved dependencies using the dependency information
+			for _, dependency := range service.Dependencies {
+				// this is not optimal, because we iterate over the dependencies and the resolved dependencies for each dependency
+				// but the list of dependencies is small, so it should be fine
+				// an optimization could be to remove the resolved dependencies from the list of dependencies
+				if !dependencyResolved(dependency, resolvedDependencies) && isDependencyOfService(dependency, serviceName) {
+					resolvedDependency, err := getDependencyFromServiceInformation(dependencyInfo, dependency)
+					if err != nil && errors.Is(err, customerrors.OutputNotExposed) {
+						log.Error().Str("dependency", dependency.ServiceName).Str("output", dependency.OutputName).Msgf("Dependency does not expose requested output. Retrying would not help, since the output definition will probably not change during runtime. Please update the service definition of service '%s' to make sure to expose '%s'", dependency.ServiceName, dependency.OutputName)
+						return nil, err
+					} else if err != nil {
+						log.Error().Str("dependency", dependency.ServiceName).Str("output", dependency.OutputName).Msg("Error resolving dependency")
+						return nil, err
+					}
+
+					log.Info().Str("dependency", dependency.ServiceName).Str("output", dependency.OutputName).Msg("Resolved dependency")
+					resolvedDependencies = append(resolvedDependencies, resolvedDependency)
+				}
+			}
+
+		}
+	}
+	return resolvedDependencies, nil
+
+}
+
+// Extract the unique service names of all unresolved dependencies
+func extractUniqueServices(dependencies []dependency, resolvedDependencies []ResolvedDependency) []string {
+	uniqueServices := make([]string, 0)
+	for _, dependency := range dependencies {
+		if !slices.Contains(uniqueServices, dependency.ServiceName) && !slices.ContainsFunc(resolvedDependencies, func(dep ResolvedDependency) bool {
+			return strings.ToLower(dep.ServiceName) == strings.ToLower(dependency.ServiceName) && strings.ToLower(dep.OutputName) == strings.ToLower(dependency.OutputName)
+		}) {
+			uniqueServices = append(uniqueServices, dependency.ServiceName)
+		}
+	}
+	return uniqueServices
+}
+
+func requestServiceInformation(serviceName string, serverSocket *zmq.Socket) (*protobuf_msgs.ServiceStatus, error) {
+	// create a request message
+	reqMsg := protobuf_msgs.SystemManagerMessage{
+		Msg: &protobuf_msgs.SystemManagerMessage_ServiceInformationRequest{
+			ServiceInformationRequest: &protobuf_msgs.ServiceInformationRequest{
+				Requested: &protobuf_msgs.ServiceIdentifier{
+					Name: serviceName,
+					Pid:  1, // does not matter
+				},
+			},
+		},
+	}
+
+	// convert the message to bytes
+	msgBytes, err := proto.Marshal(&reqMsg)
+	if err != nil {
+		log.Err(err).Msg("Error marshalling protobuf message")
+		return nil, err
+	}
+	// send the request to the system manager
+	_, err = serverSocket.SendBytes(msgBytes, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info().Str("dependency", serviceName).Msg("Requesting dependency information from system manager")
+	gotReply := false
+	go func() {
+		for {
+			// print a idle message every 5 seconds, until were done
+			if gotReply {
+				return
+			}
+			log.Info().Str("dependency", serviceName).Msg("Waiting for dependency response from system manager")
+			time.Sleep(5 * time.Second)
+		}
+	}()
+	// wait for a response from the system manager
+	resBytes, err := serverSocket.RecvBytes(0)
+	gotReply = true
+	if err != nil {
+		return nil, err
+	}
+
+	// parse the response
+	// the response must be of type ServiceStatus (see messages/servicediscovery.proto)
+	response := protobuf_msgs.SystemManagerMessage{}
+	err = proto.Unmarshal(resBytes, &response)
+	responseServiceStatus := response.GetServiceStatus()
+	fmt.Printf("Received response: %+v\n", responseServiceStatus)
+	if responseServiceStatus == nil {
+		return nil, fmt.Errorf("Received empty response from system manager, expected ServiceStatus")
+	}
+	if err != nil {
+		return nil, err
+	} else if responseServiceStatus.Status != protobuf_msgs.ServiceStatus_RUNNING {
+		// pass a detectable error, so that the caller can retry later
+		return nil, customerrors.ServiceNotRunning
+	}
+	// service is running!
+	return responseServiceStatus, nil
+}
+
+// Check if a dependency is already resolved (by checking if it is in the list of resolved dependencies)
+func dependencyResolved(dependency dependency, resolvedDependencies []ResolvedDependency) bool {
+	for _, resolvedDependency := range resolvedDependencies {
+		if dependency.ServiceName == resolvedDependency.ServiceName && dependency.OutputName == resolvedDependency.OutputName {
+			return true
+		}
+	}
+	return false
+}
+
+// Used to filter out dependencies that cannot be resolved by this service information
+// e.g. the dependency serviceB.outputA cannot be resolved by serviceC, but it can be resolved by serviceA
+func isDependencyOfService(dependency dependency, serviceName string) bool {
+	return strings.ToLower(dependency.ServiceName) == strings.ToLower(serviceName)
+}
+
+// Returns a resolved dependency, given a service status and a dependency
+func getDependencyFromServiceInformation(status *protobuf_msgs.ServiceStatus, dependency dependency) (ResolvedDependency, error) {
+	service := status.GetService()
+	if service == nil {
+		return ResolvedDependency{}, fmt.Errorf("Received empty service status")
+	}
+
+	// check if the service exposes the output that we need
+	endpoints := service.GetEndpoints()
+	if endpoints == nil {
+		return ResolvedDependency{}, fmt.Errorf("Received empty service endpoints")
+	}
+
+	for _, endpoint := range endpoints {
+		if strings.ToLower(endpoint.GetName()) == strings.ToLower(dependency.OutputName) {
+			return ResolvedDependency{
+				ServiceName: dependency.ServiceName,
+				OutputName:  dependency.OutputName,
+				Address:     endpoint.GetAddress(),
+			}, nil
+		}
+	}
+
+	return ResolvedDependency{}, customerrors.OutputNotExposed
 }

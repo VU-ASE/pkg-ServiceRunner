@@ -3,6 +3,7 @@ package servicerunner
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 // This YAML file should be parsed correctly
@@ -50,16 +51,43 @@ func TestInvalidYamlWithDuplicateAddresses(t *testing.T) {
 }
 
 func TestBasicRegistration(t *testing.T) {
-	yamlPath := "../tests/basicregistration.yaml"
-	serviceDefinition, err := parseServiceDefinitionFromYaml(yamlPath)
-	if err != nil {
-		t.Error(err)
-	}
-
 	t.Setenv("ASE_SYSMAN_SERVER_ADDRESS", "tcp://localhost:1337")
 
-	_, err = registerService(serviceDefinition)
-	if err != nil {
-		t.Error(err)
-	}
+	done := make(chan bool)
+	// first, boot up service A, which depends on B
+	go func() {
+		yamlPath := "../tests/dependencytesting/A.yaml"
+		serviceDefinition, err := parseServiceDefinitionFromYaml(yamlPath)
+		if err != nil {
+			t.Error(err)
+		}
+
+		_, err = registerService(serviceDefinition)
+		if err != nil {
+			t.Error(err)
+		}
+		done <- true
+	}()
+
+	// wait 10 seconds, then boot up service B
+	// this should also complete the registration of service A
+	go func() {
+		time.Sleep(10 * time.Second)
+
+		yamlPath := "../tests/dependencytesting/B.yaml"
+		serviceDefinition, err := parseServiceDefinitionFromYaml(yamlPath)
+		if err != nil {
+			t.Error(err)
+		}
+
+		_, err = registerService(serviceDefinition)
+		if err != nil {
+			t.Error(err)
+		}
+		done <- true
+	}()
+
+	// wait for both services to register
+	<-done
+	<-done
 }
