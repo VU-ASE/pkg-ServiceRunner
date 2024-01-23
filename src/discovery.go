@@ -111,14 +111,19 @@ func registerService(service serviceDefinition) ([]ResolvedDependency, error) {
 		})
 	}
 	// create a registration message
-	regMsg := protobuf_msgs.Service{
-		Identifier: &protobuf_msgs.ServiceIdentifier{
-			Name: service.Name,
-			Pid:  int32(os.Getpid()),
+	regMsg := protobuf_msgs.SystemManagerMessage{
+		Msg: &protobuf_msgs.SystemManagerMessage_Service{
+			Service: &protobuf_msgs.Service{
+				Identifier: &protobuf_msgs.ServiceIdentifier{
+					Name: service.Name,
+					Pid:  int32(os.Getpid()),
+				},
+				Endpoints: endpoints,
+			},
 		},
-		Endpoints: endpoints,
 	}
-	//	convert the message to bytes
+
+	// convert the message to bytes
 	msgBytes, err := proto.Marshal(&regMsg)
 	if err != nil {
 		log.Err(err).Msg("Error marshalling protobuf message")
@@ -154,14 +159,18 @@ func registerService(service serviceDefinition) ([]ResolvedDependency, error) {
 	if err != nil {
 		return nil, err
 	}
-	response := protobuf_msgs.Service{}
+	response := protobuf_msgs.SystemManagerMessage{}
 	err = proto.Unmarshal(resBytes, &response)
 	if err != nil {
 		log.Err(err).Msg("Error unmarshalling protobuf message")
 		return nil, err
 	}
+	responseService := response.GetService()
+	if responseService == nil {
+		return nil, fmt.Errorf("Received empty response from system manager")
+	}
 	// check if the name and pid of the response match our registration, if not someone else registered with the same name
-	identifier := response.GetIdentifier()
+	identifier := responseService.GetIdentifier()
 	if identifier == nil {
 		return nil, fmt.Errorf("Received empty response from system manager")
 	}
@@ -174,7 +183,7 @@ func registerService(service serviceDefinition) ([]ResolvedDependency, error) {
 		return nil, fmt.Errorf("System manager denied service registration, service %s was already registered by pid %d", service.Name, pid)
 	}
 	// check if the endpoints match our registration
-	registeredEndpints := response.GetEndpoints()
+	registeredEndpints := responseService.GetEndpoints()
 	if endpoints != nil {
 		for i, endpoint := range endpoints {
 			registeredEndpoint := registeredEndpints[i]
@@ -207,10 +216,14 @@ func registerService(service serviceDefinition) ([]ResolvedDependency, error) {
 			// resolve each service (sequentially)
 			for _, serviceName := range uniqueServiceDependencies {
 				// create a request message
-				reqMsg := protobuf_msgs.ServiceInformationRequest{
-					Requested: &protobuf_msgs.ServiceIdentifier{
-						Name: serviceName,
-						Pid:  1, // does not matter
+				reqMsg := protobuf_msgs.SystemManagerMessage{
+					Msg: &protobuf_msgs.SystemManagerMessage_ServiceInformationRequest{
+						ServiceInformationRequest: &protobuf_msgs.ServiceInformationRequest{
+							Requested: &protobuf_msgs.ServiceIdentifier{
+								Name: serviceName,
+								Pid:  1, // does not matter
+							},
+						},
 					},
 				}
 				// convert the message to bytes
@@ -232,7 +245,7 @@ func registerService(service serviceDefinition) ([]ResolvedDependency, error) {
 						if gotReply {
 							return
 						}
-						log.Info().Str("service", service.Name).Str("dependency", serviceName).Msg("Waiting for response from system manager")
+						log.Info().Str("service", service.Name).Str("dependency", serviceName).Msg("Waiting for dependency response from system manager")
 						time.Sleep(5 * time.Second)
 					}
 				}()
@@ -243,13 +256,17 @@ func registerService(service serviceDefinition) ([]ResolvedDependency, error) {
 					return nil, err
 				}
 				// the response must be of type ServiceStatus (see messages/servicediscovery.proto)
-				response := protobuf_msgs.ServiceStatus{}
+				response := protobuf_msgs.SystemManagerMessage{}
+				responseServiceStatus := response.GetServiceStatus()
+				if responseServiceStatus == nil {
+					return nil, fmt.Errorf("Received empty response from system manager")
+				}
 				err = proto.Unmarshal(resBytes, &response)
 				if err != nil {
 					log.Warn().Str("service", service.Name).Str("dependency", serviceName).Err(err).Msg("Could not parse response from system manager. Assuming that the service we are depending on is not yet registered. Will retry in 5 seconds")
 					time.Sleep(5 * time.Second)
 					continue
-				} else if response.Status.Enum() != protobuf_msgs.ServiceStatus_RUNNING.Enum() {
+				} else if responseServiceStatus.Status.Enum() != protobuf_msgs.ServiceStatus_RUNNING.Enum() {
 					log.Warn().Str("service", service.Name).Str("dependency", serviceName).Msg("Dependency is not running yet. Will retry in 5 seconds")
 					time.Sleep(5 * time.Second)
 					continue
@@ -258,7 +275,7 @@ func registerService(service serviceDefinition) ([]ResolvedDependency, error) {
 				for _, dependency := range service.Dependencies {
 					if strings.ToLower(dependency.ServiceName) == strings.ToLower(serviceName) {
 						// does the service expose our dependency as an output?
-						resolvedDependency, err := extractOutputFromServiceStatus(&response, dependency)
+						resolvedDependency, err := extractOutputFromServiceStatus(responseServiceStatus, dependency)
 						if err != nil {
 							log.Err(err).Msg("Error extracting dependency from service status")
 							return nil, err

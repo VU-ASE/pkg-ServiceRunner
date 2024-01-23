@@ -48,3 +48,18 @@ func TestInvalidYamlWithDuplicateAddresses(t *testing.T) {
 		t.Errorf("Parsed invalid yaml")
 	}
 }
+
+func TestBasicRegistration(t *testing.T) {
+	yamlPath := "../tests/basicregistration.yaml"
+	serviceDefinition, err := parseServiceDefinitionFromYaml(yamlPath)
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Setenv("ASE_SYSMAN_SERVER_ADDRESS", "tcp://localhost:1337")
+
+	_, err = registerService(serviceDefinition)
+	if err != nil {
+		t.Error(err)
+	}
+}
