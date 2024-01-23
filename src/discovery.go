@@ -95,6 +95,7 @@ func registerService(service serviceDefinition) ([]ResolvedDependency, error) {
 		return nil, fmt.Errorf("Could not open ZMQ connection to system manager: %s", err)
 	}
 	defer client.Close()
+	log.Debug().Str("service", service.Name).Str("address", sysmanDetails.serverAddress).Msg("Connecting to system manager")
 	err = client.Connect(sysmanDetails.serverAddress)
 	if err != nil {
 		return nil, fmt.Errorf("Could not connect to system manager: %s", err)
