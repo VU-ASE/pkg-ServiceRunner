@@ -51,7 +51,10 @@ func TestInvalidYamlWithDuplicateAddresses(t *testing.T) {
 }
 
 func TestBasicRegistration(t *testing.T) {
-	t.Setenv("ASE_SYSMAN_SERVER_ADDRESS", "tcp://localhost:1337")
+	sysmanDetails := SystemManagerDetails{
+		serverAddress:    "tcp://localhost:1337",
+		publisherAddress: "tcp://localhost:1338",
+	}
 
 	done := make(chan bool)
 	// first, boot up service A, which depends on B
@@ -62,7 +65,7 @@ func TestBasicRegistration(t *testing.T) {
 			t.Error(err)
 		}
 
-		_, err = registerService(serviceDefinition)
+		_, err = registerService(serviceDefinition, sysmanDetails)
 		if err != nil {
 			t.Error(err)
 		}
@@ -80,7 +83,7 @@ func TestBasicRegistration(t *testing.T) {
 			t.Error(err)
 		}
 
-		_, err = registerService(serviceDefinition)
+		_, err = registerService(serviceDefinition, sysmanDetails)
 		if err != nil {
 			t.Error(err)
 		}

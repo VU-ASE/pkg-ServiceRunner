@@ -36,36 +36,8 @@ func allDependenciesResolved(service serviceDefinition, resolvedDependencies []R
 	return true
 }
 
-// The system manager exposes two endpoints: a pub/sub endpoint for broadcasting service registration and a req/rep endpoint for registering services and resolving dependencies
-// this struct is used to store the addresses of these endpoints
-type SystemManagerDetails struct {
-	serverAddress    string // used for req/rep communication
-	publisherAddress string // used for pub/sub communication
-}
-
-func getSystemManagerDetails() (SystemManagerDetails, error) {
-	serverAddr := os.Getenv("ASE_SYSMAN_SERVER_ADDRESS")
-	if serverAddr == "" {
-		return SystemManagerDetails{}, fmt.Errorf("Cannot reach system manager: environment variable ASE_SYSMAN_SERVER_ADDRESS is not set, do not know how to reach system manager :(")
-	}
-	pubAddr := os.Getenv("ASE_SYSMAN_BROADCAST_ADDRESS")
-	if serverAddr == "" {
-		return SystemManagerDetails{}, fmt.Errorf("Cannot reach system manager: environment variable ASE_SYSMAN_BROADCAST_ADDRESS is not set, do not know how to reach system manager :(")
-	}
-	return SystemManagerDetails{
-		serverAddress:    serverAddr,
-		publisherAddress: pubAddr,
-	}, nil
-}
-
 // Will contact the discovery service to get the addresses of each dependency and register this service with the service discovery service (the system manager)
-func registerService(service serviceDefinition) ([]ResolvedDependency, error) {
-	// read the address of the system manager from the environment
-	sysmanDetails, err := getSystemManagerDetails()
-	if err != nil {
-		return nil, err
-	}
-
+func registerService(service serviceDefinition, sysmanDetails SystemManagerDetails) ([]ResolvedDependency, error) {
 	// create a zmq client socket to the system manager
 	client, err := zmq.NewSocket(zmq.REQ)
 	if err != nil {
@@ -116,12 +88,17 @@ func registerService(service serviceDefinition) ([]ResolvedDependency, error) {
 
 	responseReceived := false
 	go func() {
+		count := 0
 		for {
 			// print a idle message every 5 seconds, until were done
 			if responseReceived {
 				return
 			}
-			log.Info().Str("service", service.Name).Msg("Waiting for response from system manager")
+			if (count) > 5 {
+				log.Warn().Str("service", service.Name).Msgf("Still waiting for response from system manager. Are you sure the system manager is running and available at '%s'?", sysmanDetails.serverAddress)
+			} else {
+				log.Info().Str("service", service.Name).Msg("Waiting for response from system manager")
+			}
 			time.Sleep(5 * time.Second)
 		}
 	}()
@@ -130,7 +107,7 @@ func registerService(service serviceDefinition) ([]ResolvedDependency, error) {
 	resBytes, err := client.RecvBytes(0)
 	responseReceived = true
 
-	// the response must be of type Service (see messages/servicediscovery.proto)
+	// the response must be of type Service (see include/servicediscovery.proto)
 	// if not, we discard it: registration not successful
 	log.Info().Str("service", service.Name).Msg("Received registration response from system manager")
 	if err != nil {
@@ -274,13 +251,19 @@ func requestServiceInformation(serviceName string, serverSocket *zmq.Socket) (*p
 	log.Info().Str("dependency", serviceName).Msg("Requesting dependency information from system manager")
 	gotReply := false
 	go func() {
+		count := 0
 		for {
 			// print a idle message every 5 seconds, until were done
 			if gotReply {
 				return
 			}
-			log.Info().Str("dependency", serviceName).Msg("Waiting for dependency response from system manager")
+			if count > 5 {
+				log.Warn().Str("dependency", serviceName).Msg("Still waiting for dependency response from system manager. Are you sure the system manager is running?")
+			} else {
+				log.Info().Str("dependency", serviceName).Msg("Waiting for dependency response from system manager")
+			}
 			time.Sleep(5 * time.Second)
+			count++
 		}
 	}()
 	// wait for a response from the system manager
@@ -295,7 +278,6 @@ func requestServiceInformation(serviceName string, serverSocket *zmq.Socket) (*p
 	response := protobuf_msgs.SystemManagerMessage{}
 	err = proto.Unmarshal(resBytes, &response)
 	responseServiceStatus := response.GetServiceStatus()
-	fmt.Printf("Received response: %+v\n", responseServiceStatus)
 	if responseServiceStatus == nil {
 		return nil, fmt.Errorf("Received empty response from system manager, expected ServiceStatus")
 	}
