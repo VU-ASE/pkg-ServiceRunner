@@ -30,7 +30,7 @@ func (service ResolvedService) GetDependencyAddress(serviceName string, outputNa
 			return dependency.Address, nil
 		}
 	}
-	return "", fmt.Errorf("Dependency %s.%s not found", serviceName, outputName)
+	return "", fmt.Errorf("Dependency %s.%s not found. Are you sure it is exposed by %s?", serviceName, outputName, serviceName)
 }
 
 // Utility function to get the address of your own output
@@ -40,5 +40,5 @@ func (service ResolvedService) GetOutputAddress(outputName string) (string, erro
 			return output.Address, nil
 		}
 	}
-	return "", fmt.Errorf("Output %s not found", outputName)
+	return "", fmt.Errorf("Output %s not found. Was it defined in service.yaml?", outputName)
 }
