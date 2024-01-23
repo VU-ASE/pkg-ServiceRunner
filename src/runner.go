@@ -1,6 +1,7 @@
 package servicerunner
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -54,7 +55,11 @@ func Run(main MainFunction) {
 	// Parse the service definition
 	service, err := parseServiceDefinitionFromYaml(*serviceYamlPath)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Error parsing service definition")
+		if errors.Is(err, os.ErrNotExist) {
+			log.Fatal().Err(err).Msg("Could not open service definition YAML. Use the -service-yaml flag to specify the path to the service definition YAML file")
+		} else {
+			log.Fatal().Err(err).Msg("Error parsing service definition")
+		}
 	}
 
 	// Set up logging

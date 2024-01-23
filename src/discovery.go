@@ -92,12 +92,12 @@ func registerService(service serviceDefinition) ([]ResolvedDependency, error) {
 	// create a zmq client socket to the system manager
 	client, err := zmq.NewSocket(zmq.REP)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Could not open ZMQ connection to system manager: %s", err)
 	}
 	defer client.Close()
 	err = client.Connect(sysmanDetails.serverAddress)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Could not connect to system manager: %s", err)
 	}
 
 	// convert our service definition to a protobuf message
