@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v1.0.0...v1.1.0) (2024-01-24)
+
+
+### Features
+
+* moved protobuf messages into own namespace ([05d6868](https://github.com/VU-ASE/pkg-ServiceRunner/commit/05d686889bccf62b1c3a1566d58c16be71751151))
+
 ## 1.0.0 (2024-01-24)
 
 
