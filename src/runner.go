@@ -32,7 +32,7 @@ func getSystemManagerDetails() (SystemManagerDetails, error) {
 		return SystemManagerDetails{}, fmt.Errorf("Cannot reach system manager: environment variable ASE_SYSMAN_SERVER_ADDRESS is not set, do not know how to reach system manager :(")
 	}
 	pubAddr := os.Getenv("ASE_SYSMAN_BROADCAST_ADDRESS")
-	if serverAddr == "" {
+	if pubAddr == "" {
 		return SystemManagerDetails{}, fmt.Errorf("Cannot reach system manager: environment variable ASE_SYSMAN_BROADCAST_ADDRESS is not set, do not know how to reach system manager :(")
 	}
 	return SystemManagerDetails{
@@ -95,16 +95,16 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction) {
 	// Try registering the service with the system manager
 	resolvedDependencies := make([]ResolvedDependency, 0)
 
-	// Fetch the endpoints of the system manager
-	systemManagerDetails, err := getSystemManagerDetails()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error getting system manager details")
-	}
-
 	// Don't register the system manager with itself
 	if strings.ToLower(service.Name) == "systemmanager" {
 		log.Info().Msg("Service registration skipped. This is the system manager.")
 	} else {
+		// Fetch the endpoints of the system manager
+		systemManagerDetails, err := getSystemManagerDetails()
+		if err != nil {
+			log.Fatal().Err(err).Msg("Error getting system manager details")
+		}
+
 		// Register the service with the system manager
 		resolvedDependencies, err = registerService(service, systemManagerDetails)
 		if err != nil {
@@ -125,6 +125,12 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction) {
 	if strings.ToLower(service.Name) == "systemmanager" {
 		log.Info().Msg("Tuning state skipped. This is the system manager.")
 	} else {
+		// Fetch the endpoints of the system manager
+		systemManagerDetails, err := getSystemManagerDetails()
+		if err != nil {
+			log.Fatal().Err(err).Msg("Error getting system manager details")
+		}
+
 		tuningState, err = requestTuningState(systemManagerDetails)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Error requesting tuning state")
@@ -148,7 +154,13 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction) {
 		// Listen for tuning state updates, and callback when a new tuning state is received
 		go func() {
 			for {
-				err := listenForTuningBroadcasts(onTuningState, systemManagerDetails)
+				// Fetch the endpoints of the system manager
+				systemManagerDetails, err := getSystemManagerDetails()
+				if err != nil {
+					log.Fatal().Err(err).Msg("Error getting system manager details")
+				}
+
+				err = listenForTuningBroadcasts(onTuningState, systemManagerDetails)
 				if err != nil {
 					log.Err(err).Msg("Error listening for tuning state broadcasts")
 				}
