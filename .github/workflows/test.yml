@@ -28,7 +28,7 @@ jobs:
           version: v1.55
           skip-pkg-cache: true
   tests:
-    name: linter
+    name: automated tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v4
