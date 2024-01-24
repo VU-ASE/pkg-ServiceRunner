@@ -16,11 +16,11 @@ go get github.com/VU-ASE/pkg-ServiceRunner
 ```
 
 > [!TIP]
-> You can install a specific version like this: `github.com/VU-ASE/pkg-ServiceRunner@v0.1.2` to improve reproducibility
+> You can install a specific version like this: `go get github.com/VU-ASE/pkg-ServiceRunner@v0.1.2` to improve reproducibility
 
 Then, in your `main()` function, call the `servicerunner.Run` function. This function needs two parameters:
 
-- Your "entrypoint" function to run. This entrypoint function should take as input a `TuningState` argument: this is the initial tuning state, fetched from the system manager. It should also have return type error
+- Your "entrypoint" function to run. This entrypoint function should take as input a `servicerunner.ResolvedService` argument (read more about this below) and a `TuningState` argument: this is the initial tuning state, fetched from the system manager. It should also have return type `error`
 - A tuning state callback function. This function should take as input a `TuningState` argument and is called whenever a new tuning state is available
 
 ### Example: basic *main.go*
@@ -152,6 +152,21 @@ The ServiceRunner exposes the following flags that can be used to run your binar
 | `-retries`             | 0            | Number of restart attempts after your service entrypoint function returns an error           |
 | `-service-yaml`        | service.yaml | Path to the service.yaml file defining your service                                          |
 | `-disable-live-tuning` | false        | Disable live tuning (your tuningstate callback will not be called when this flag is enabled) |
+
+Some examples:
+```bash
+# Run with debug enabled
+./<path_to_your_binary> -debug
+
+# Run with 5 retries
+./<path_to_your_binary> -retries 5
+
+# Run with service yaml placed on your Desktop
+./<path_to_your_binary> -service-yaml ~/Desktop/myservice.yaml
+
+# Run without listening for tuning updates during execution
+./<path_to_your_binary> -disable-live-tuning
+```
 
 ## Important
 
