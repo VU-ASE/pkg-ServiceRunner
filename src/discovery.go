@@ -24,7 +24,7 @@ func allDependenciesResolved(service serviceDefinition, resolvedDependencies []R
 	for _, dependency := range service.Dependencies {
 		found := false
 		for _, resolvedDependency := range resolvedDependencies {
-			if strings.ToLower(dependency.ServiceName) == strings.ToLower(resolvedDependency.ServiceName) && strings.ToLower(dependency.OutputName) == strings.ToLower(resolvedDependency.OutputName) {
+			if strings.EqualFold(dependency.ServiceName, resolvedDependency.ServiceName) && strings.EqualFold(dependency.OutputName, resolvedDependency.OutputName) {
 				found = true
 			}
 		}
@@ -138,14 +138,12 @@ func registerService(service serviceDefinition, sysmanDetails SystemManagerDetai
 	}
 	// check if the endpoints match our registration
 	registeredEndpints := responseService.GetEndpoints()
-	if endpoints != nil {
-		for i, endpoint := range endpoints {
-			registeredEndpoint := registeredEndpints[i]
-			if registeredEndpoint == nil {
-				return nil, fmt.Errorf("Endpoint %s was not registered", endpoint.Name)
-			} else if registeredEndpoint.GetName() != endpoint.Name || registeredEndpoint.GetAddress() != endpoint.Address {
-				return nil, fmt.Errorf("Endpoint %s was registered with different address (%s) than requested (%s)", endpoint.Name, registeredEndpoint.GetAddress(), endpoint.Address)
-			}
+	for i, endpoint := range endpoints {
+		registeredEndpoint := registeredEndpints[i]
+		if registeredEndpoint == nil {
+			return nil, fmt.Errorf("Endpoint %s was not registered", endpoint.Name)
+		} else if registeredEndpoint.GetName() != endpoint.Name || registeredEndpoint.GetAddress() != endpoint.Address {
+			return nil, fmt.Errorf("Endpoint %s was registered with different address (%s) than requested (%s)", endpoint.Name, registeredEndpoint.GetAddress(), endpoint.Address)
 		}
 	}
 
@@ -215,7 +213,7 @@ func extractUniqueServices(dependencies []dependency, resolvedDependencies []Res
 	uniqueServices := make([]string, 0)
 	for _, dependency := range dependencies {
 		if !slices.Contains(uniqueServices, dependency.ServiceName) && !slices.ContainsFunc(resolvedDependencies, func(dep ResolvedDependency) bool {
-			return strings.ToLower(dep.ServiceName) == strings.ToLower(dependency.ServiceName) && strings.ToLower(dep.OutputName) == strings.ToLower(dependency.OutputName)
+			return strings.EqualFold(dep.ServiceName, dependency.ServiceName) && strings.EqualFold(dep.OutputName, dependency.OutputName)
 		}) {
 			uniqueServices = append(uniqueServices, dependency.ServiceName)
 		}
@@ -304,7 +302,7 @@ func dependencyResolved(dependency dependency, resolvedDependencies []ResolvedDe
 // Used to filter out dependencies that cannot be resolved by this service information
 // e.g. the dependency serviceB.outputA cannot be resolved by serviceC, but it can be resolved by serviceA
 func isDependencyOfService(dependency dependency, serviceName string) bool {
-	return strings.ToLower(dependency.ServiceName) == strings.ToLower(serviceName)
+	return strings.EqualFold(dependency.ServiceName, serviceName)
 }
 
 // Returns a resolved dependency, given a service status and a dependency
@@ -321,7 +319,7 @@ func getDependencyFromServiceInformation(status *protobuf_msgs.ServiceStatus, de
 	}
 
 	for _, endpoint := range endpoints {
-		if strings.ToLower(endpoint.GetName()) == strings.ToLower(dependency.OutputName) {
+		if strings.EqualFold(endpoint.GetName(), dependency.OutputName) {
 			return ResolvedDependency{
 				ServiceName: dependency.ServiceName,
 				OutputName:  dependency.OutputName,

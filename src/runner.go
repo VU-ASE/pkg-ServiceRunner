@@ -146,7 +146,14 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction) {
 
 	if !*noLiveTuning && strings.ToLower(service.Name) == "systemmanager" {
 		// Listen for tuning state updates, and callback when a new tuning state is received
-		go listenForTuningBroadcasts(onTuningState, systemManagerDetails)
+		go func() {
+			for {
+				err := listenForTuningBroadcasts(onTuningState, systemManagerDetails)
+				if err != nil {
+					log.Err(err).Msg("Error listening for tuning state broadcasts")
+				}
+			}
+		}()
 	}
 
 	if err != nil {

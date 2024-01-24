@@ -26,7 +26,7 @@ type ResolvedService struct {
 // Utiliy function to get the address of a dependency
 func (service ResolvedService) GetDependencyAddress(serviceName string, outputName string) (string, error) {
 	for _, dependency := range service.Dependencies {
-		if strings.ToLower(serviceName) == strings.ToLower(dependency.ServiceName) && strings.ToLower(outputName) == strings.ToLower(dependency.OutputName) {
+		if strings.EqualFold(serviceName, dependency.ServiceName) && strings.EqualFold(outputName, dependency.OutputName) {
 			return dependency.Address, nil
 		}
 	}
@@ -36,7 +36,7 @@ func (service ResolvedService) GetDependencyAddress(serviceName string, outputNa
 // Utility function to get the address of your own output
 func (service ResolvedService) GetOutputAddress(outputName string) (string, error) {
 	for _, output := range service.Outputs {
-		if strings.ToLower(outputName) == strings.ToLower(output.Name) {
+		if strings.EqualFold(outputName, output.Name) {
 			return output.Address, nil
 		}
 	}

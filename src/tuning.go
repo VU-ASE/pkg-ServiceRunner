@@ -18,8 +18,14 @@ func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, sysman
 		return err
 	}
 	defer broadcast.Close()
-	broadcast.Connect(sysmanDetails.publisherAddress)
-	broadcast.SetSubscribe("")
+	err = broadcast.Connect(sysmanDetails.publisherAddress)
+	if err != nil {
+		return err
+	}
+	err = broadcast.SetSubscribe("")
+	if err != nil {
+		return err
+	}
 
 	// main receiver loop
 	for {
