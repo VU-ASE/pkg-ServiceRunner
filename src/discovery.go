@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	protobuf_msgs "github.com/VU-ASE/pkg-ServiceRunner/include"
+	pb_systemmanager_messages "github.com/VU-ASE/pkg-CommunicationDefinitions/packages/go/systemmanager"
 	customerrors "github.com/VU-ASE/pkg-ServiceRunner/src/errors"
 	zmq "github.com/pebbe/zmq4"
 	"github.com/rs/zerolog/log"
@@ -51,19 +51,19 @@ func registerService(service serviceDefinition, sysmanDetails SystemManagerDetai
 	}
 
 	// convert our service definition to a protobuf message
-	endpoints := []*protobuf_msgs.ServiceEndpoint{}
+	endpoints := []*pb_systemmanager_messages.ServiceEndpoint{}
 	for _, output := range service.Outputs {
 		// convert our struct to the ServiceEndpoint protobuf message
-		endpoints = append(endpoints, &protobuf_msgs.ServiceEndpoint{
+		endpoints = append(endpoints, &pb_systemmanager_messages.ServiceEndpoint{
 			Name:    output.Name,
 			Address: output.Address,
 		})
 	}
 	// create a registration message
-	regMsg := protobuf_msgs.SystemManagerMessage{
-		Msg: &protobuf_msgs.SystemManagerMessage_Service{
-			Service: &protobuf_msgs.Service{
-				Identifier: &protobuf_msgs.ServiceIdentifier{
+	regMsg := pb_systemmanager_messages.SystemManagerMessage{
+		Msg: &pb_systemmanager_messages.SystemManagerMessage_Service{
+			Service: &pb_systemmanager_messages.Service{
+				Identifier: &pb_systemmanager_messages.ServiceIdentifier{
 					Name: service.Name,
 					Pid:  int32(os.Getpid()),
 				},
@@ -113,7 +113,7 @@ func registerService(service serviceDefinition, sysmanDetails SystemManagerDetai
 	if err != nil {
 		return nil, err
 	}
-	response := protobuf_msgs.SystemManagerMessage{}
+	response := pb_systemmanager_messages.SystemManagerMessage{}
 	err = proto.Unmarshal(resBytes, &response)
 	if err != nil {
 		log.Err(err).Msg("Error unmarshalling protobuf message")
@@ -221,12 +221,12 @@ func extractUniqueServices(dependencies []dependency, resolvedDependencies []Res
 	return uniqueServices
 }
 
-func requestServiceInformation(serviceName string, serverSocket *zmq.Socket) (*protobuf_msgs.ServiceStatus, error) {
+func requestServiceInformation(serviceName string, serverSocket *zmq.Socket) (*pb_systemmanager_messages.ServiceStatus, error) {
 	// create a request message
-	reqMsg := protobuf_msgs.SystemManagerMessage{
-		Msg: &protobuf_msgs.SystemManagerMessage_ServiceInformationRequest{
-			ServiceInformationRequest: &protobuf_msgs.ServiceInformationRequest{
-				Requested: &protobuf_msgs.ServiceIdentifier{
+	reqMsg := pb_systemmanager_messages.SystemManagerMessage{
+		Msg: &pb_systemmanager_messages.SystemManagerMessage_ServiceInformationRequest{
+			ServiceInformationRequest: &pb_systemmanager_messages.ServiceInformationRequest{
+				Requested: &pb_systemmanager_messages.ServiceIdentifier{
 					Name: serviceName,
 					Pid:  1, // does not matter
 				},
@@ -273,7 +273,7 @@ func requestServiceInformation(serviceName string, serverSocket *zmq.Socket) (*p
 
 	// parse the response
 	// the response must be of type ServiceStatus (see messages/servicediscovery.proto)
-	response := protobuf_msgs.SystemManagerMessage{}
+	response := pb_systemmanager_messages.SystemManagerMessage{}
 	err = proto.Unmarshal(resBytes, &response)
 	responseServiceStatus := response.GetServiceStatus()
 	if responseServiceStatus == nil {
@@ -281,7 +281,7 @@ func requestServiceInformation(serviceName string, serverSocket *zmq.Socket) (*p
 	}
 	if err != nil {
 		return nil, err
-	} else if responseServiceStatus.Status != protobuf_msgs.ServiceStatus_RUNNING {
+	} else if responseServiceStatus.Status != pb_systemmanager_messages.ServiceStatus_RUNNING {
 		// pass a detectable error, so that the caller can retry later
 		return nil, customerrors.ServiceNotRunning
 	}
@@ -306,7 +306,7 @@ func isDependencyOfService(dependency dependency, serviceName string) bool {
 }
 
 // Returns a resolved dependency, given a service status and a dependency
-func getDependencyFromServiceInformation(status *protobuf_msgs.ServiceStatus, dependency dependency) (ResolvedDependency, error) {
+func getDependencyFromServiceInformation(status *pb_systemmanager_messages.ServiceStatus, dependency dependency) (ResolvedDependency, error) {
 	service := status.GetService()
 	if service == nil {
 		return ResolvedDependency{}, fmt.Errorf("Received empty service status")

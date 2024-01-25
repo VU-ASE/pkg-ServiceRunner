@@ -8,16 +8,16 @@ import (
 	"strings"
 	"time"
 
-	protobuf_msgs "github.com/VU-ASE/pkg-ServiceRunner/include"
+	pb_systemmanager_messages "github.com/VU-ASE/pkg-CommunicationDefinitions/packages/go/systemmanager"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 // The function that is called when a new tuning state is recevied
-type TuningStateCallbackFunction func(tuningState *protobuf_msgs.TuningState)
+type TuningStateCallbackFunction func(tuningState *pb_systemmanager_messages.TuningState)
 
 // The main function to run
-type MainFunction func(serviceInformation ResolvedService, initialTuningState *protobuf_msgs.TuningState) error
+type MainFunction func(serviceInformation ResolvedService, initialTuningState *pb_systemmanager_messages.TuningState) error
 
 // The system manager exposes two endpoints: a pub/sub endpoint for broadcasting service registration and a req/rep endpoint for registering services and resolving dependencies
 // this struct is used to store the addresses of these endpoints
@@ -122,7 +122,7 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction) {
 	}
 
 	// Receive the initial tuning state
-	tuningState := &protobuf_msgs.TuningState{}
+	tuningState := &pb_systemmanager_messages.TuningState{}
 	if strings.ToLower(service.Name) == "systemmanager" {
 		log.Info().Msg("Tuning state skipped. This is the system manager.")
 	} else {

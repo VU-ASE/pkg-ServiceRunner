@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	protobuf_msgs "github.com/VU-ASE/pkg-ServiceRunner/include"
+	pb_systemmanager_messages "github.com/VU-ASE/pkg-CommunicationDefinitions/packages/go/systemmanager"
 	zmq "github.com/pebbe/zmq4"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
@@ -37,7 +37,7 @@ func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, sysman
 
 		// NOTE: this is a best effor, we discard the message (and any errors) if we cannot parse it
 		// Parse the tuning state
-		parsedMsg := protobuf_msgs.SystemManagerMessage{}
+		parsedMsg := pb_systemmanager_messages.SystemManagerMessage{}
 		err = proto.Unmarshal(msg, &parsedMsg)
 		if err != nil {
 			continue
@@ -54,7 +54,7 @@ func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, sysman
 	}
 }
 
-func requestTuningState(sysmanDetails SystemManagerDetails) (*protobuf_msgs.TuningState, error) {
+func requestTuningState(sysmanDetails SystemManagerDetails) (*pb_systemmanager_messages.TuningState, error) {
 	// create a zmq client socket to the system manager
 	client, err := zmq.NewSocket(zmq.REQ)
 	if err != nil {
@@ -68,9 +68,9 @@ func requestTuningState(sysmanDetails SystemManagerDetails) (*protobuf_msgs.Tuni
 	}
 
 	// create a request message
-	reqMsg := protobuf_msgs.SystemManagerMessage{
-		Msg: &protobuf_msgs.SystemManagerMessage_TuningStateRequest{
-			TuningStateRequest: &protobuf_msgs.TuningStateRequest{},
+	reqMsg := pb_systemmanager_messages.SystemManagerMessage{
+		Msg: &pb_systemmanager_messages.SystemManagerMessage_TuningStateRequest{
+			TuningStateRequest: &pb_systemmanager_messages.TuningStateRequest{},
 		},
 	}
 
@@ -115,7 +115,7 @@ func requestTuningState(sysmanDetails SystemManagerDetails) (*protobuf_msgs.Tuni
 	if err != nil {
 		return nil, err
 	}
-	response := protobuf_msgs.SystemManagerMessage{}
+	response := pb_systemmanager_messages.SystemManagerMessage{}
 	err = proto.Unmarshal(resBytes, &response)
 	if err != nil {
 		log.Err(err).Msg("Error unmarshalling tuning state protobuf message")
