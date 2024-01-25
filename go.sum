@@ -1,15 +1,5 @@
-github.com/VU-ASE/pkg-CommunicationDefinitions v1.1.1 h1:l8vi9xcHjRERa++/Cn65C5YiFtjqZ0GKEyrnG4csBOo=
-github.com/VU-ASE/pkg-CommunicationDefinitions v1.1.1/go.mod h1:hzju6GM1Kjkzif3Fe8BiMfwrQuo0L5un3BwuznFBHhk=
-github.com/VU-ASE/pkg-CommunicationDefinitions v1.1.2 h1:An5RjdpdVUHnkFYDpG1rmn84anZkzzpJmRN03l9T+vQ=
-github.com/VU-ASE/pkg-CommunicationDefinitions v1.1.2/go.mod h1:hzju6GM1Kjkzif3Fe8BiMfwrQuo0L5un3BwuznFBHhk=
 github.com/VU-ASE/pkg-CommunicationDefinitions v1.2.0 h1:lndoEGN3W40nHGZZm9mjrLMuM8coJfWf30oV2qhMmlU=
 github.com/VU-ASE/pkg-CommunicationDefinitions v1.2.0/go.mod h1:7QG+kwSUA0yOkvJ3oGEiDQprpQ0oQ9VADWAVEW2K1DA=
-github.com/VU-ASE/pkg-CommunicationDefinitions/packages/go v0.0.0-20240125141806-46618f9f8077 h1:5jZAZQ+HlcXriir6yzEL6QCkcADU4Ea5NrfZ3luVank=
-github.com/VU-ASE/pkg-CommunicationDefinitions/packages/go v0.0.0-20240125141806-46618f9f8077/go.mod h1:LN5G3OL5Ke8UHvdkx30/6AH7CGBr+auz+weH63P8zEY=
-github.com/VU-ASE/pkg-CommunicationDefinitions/packages/go v0.0.0-20240125152249-42b91ee8feb5 h1:7Qarjs2I9KUV8f/4Y/ap2brGjaoI55UrNrftzfq93ao=
-github.com/VU-ASE/pkg-CommunicationDefinitions/packages/go v0.0.0-20240125152249-42b91ee8feb5/go.mod h1:LN5G3OL5Ke8UHvdkx30/6AH7CGBr+auz+weH63P8zEY=
-github.com/VU-ASE/pkg-CommunicationDefinitions/packages/go v0.0.0-20240125152433-9ea113d06f5c h1:lo2FS2/9kqV1bDQ38Z7egMlIPX5OZyEV4OF+TSGHbcs=
-github.com/VU-ASE/pkg-CommunicationDefinitions/packages/go v0.0.0-20240125152433-9ea113d06f5c/go.mod h1:LN5G3OL5Ke8UHvdkx30/6AH7CGBr+auz+weH63P8zEY=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/go-yaml/yaml v2.1.0+incompatible h1:RYi2hDdss1u4YE7GwixGzWwVo47T8UQwnTLB6vQiq+o=
 github.com/go-yaml/yaml v2.1.0+incompatible/go.mod h1:w2MrLa16VYP0jy6N7M5kHaCkaLENm+P+Tv+MfurjSw0=
