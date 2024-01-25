@@ -172,3 +172,11 @@ Some examples:
 
 **Service name `systemmanager` is a reserved name**
 When specifying your service name as `systemmanager` in *service.yaml*, the ServiceRunner will not attempt service registration, dependency resolving and tuning state fetching. (As the system manager cannot register with itself).
+
+**Outputs with `localhost` in their address will be rewritten**
+A service that wants to use its own outputs in its *service.yaml* file will get a rewritten version of their output address to make sure that you can use the address to listen on all interfaces (useful when using zeroMQ). This is best illustrated in this example:
+
+- **Service A** depends on **Service B**
+- **Service B** has one output, named **Output 1**, with address **tcp://localhost:1234**
+- During the dependency resolution of Service A, it will fetch **tcp://localhost:1234**, so that service A can start listening there
+  - **HOWEVER**: Service B will receive **tcp://*:1234** as its own output address, so that it can start listening on all interfaces. Notice how `localhost` was replaced with `*`

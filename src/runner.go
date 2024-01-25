@@ -77,6 +77,7 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction) {
 	retries := flag.Int("retries", 0, "how often to retry the service if it fails")
 	serviceYamlPath := flag.String("service-yaml", "service.yaml", "path to the service definition yaml file")
 	noLiveTuning := flag.Bool("disable-live-tuning", false, "disable live tuning updates from the system manager")
+
 	flag.Parse()
 
 	// Parse the service definition

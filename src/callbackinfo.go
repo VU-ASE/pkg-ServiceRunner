@@ -3,6 +3,8 @@ package servicerunner
 import (
 	"fmt"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 )
 
 //
@@ -33,11 +35,20 @@ func (service ResolvedService) GetDependencyAddress(serviceName string, outputNa
 	return "", fmt.Errorf("Dependency '%s.%s' not found. Are you sure it is exposed by %s?", serviceName, outputName, serviceName)
 }
 
+// For now, we only replace localhost with * for zmq, but more modifications can be added later
+func rewriteOutputAddress(addr string) string {
+	repAddr := strings.ReplaceAll(addr, "localhost", "*")
+	if repAddr != addr {
+		log.Debug().Str("old", addr).Str("new", repAddr).Msg("Rewrote output address for own consumption")
+	}
+	return repAddr
+}
+
 // Utility function to get the address of your own output
 func (service ResolvedService) GetOutputAddress(outputName string) (string, error) {
 	for _, output := range service.Outputs {
 		if strings.EqualFold(outputName, output.Name) {
-			return output.Address, nil
+			return rewriteOutputAddress(output.Address), nil
 		}
 	}
 	return "", fmt.Errorf("Output '%s' not found. Was it defined in service.yaml?", outputName)
