@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v1.2.1...v1.3.0) (2024-01-25)
+
+
+### Features
+
+* replaced git submodules with CommunicationDefinitions package ([bd89edb](https://github.com/VU-ASE/pkg-ServiceRunner/commit/bd89edbc5bc9162f04143dea3d84b0f54c2993fc))
+
 ## [1.2.1](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v1.2.0...v1.2.1) (2024-01-25)
 
 
