@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v1.1.0...v1.2.0) (2024-01-25)
+
+
+### Features
+
+* autoreplace localhost with asterisk in own output definitions ([a585f1b](https://github.com/VU-ASE/pkg-ServiceRunner/commit/a585f1bcf415240a53bb0867fa2353a06035e34d))
+
 ## [1.1.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v1.0.0...v1.1.0) (2024-01-24)
 
 
