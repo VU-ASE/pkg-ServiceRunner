@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v1.2.0...v1.2.1) (2024-01-25)
+
+
+### Bug Fixes
+
+* typo in systemmanager protobuf message namespace ([9d8b4bd](https://github.com/VU-ASE/pkg-ServiceRunner/commit/9d8b4bdb6615fc3f80add1fa5117d9252f993c1d))
+
 ## [1.2.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v1.1.0...v1.2.0) (2024-01-25)
 
 
