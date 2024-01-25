@@ -90,6 +90,10 @@ func parseServiceDefinition(yamlString string) (serviceDefinition, error) {
 	}
 
 	validationError := validateServiceDefinition(serviceDefinition)
+	if validationError != nil {
+		return serviceDefinition, validationError
+	}
+
 	return serviceDefinition, validationError
 }
 
