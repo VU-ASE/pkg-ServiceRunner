@@ -1,6 +1,6 @@
 module github.com/VU-ASE/pkg-ServiceRunner
 
-go 1.21.1
+go 1.21.6
 
 require (
 	github.com/go-yaml/yaml v2.1.0+incompatible
@@ -10,6 +10,8 @@ require (
 )
 
 require (
+	github.com/VU-ASE/pkg-CommunicationDefinitions v1.2.0 // indirect
+	github.com/VU-ASE/pkg-CommunicationDefinitions/packages/go v0.0.0-20240125152433-9ea113d06f5c // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	golang.org/x/sys v0.12.0 // indirect
