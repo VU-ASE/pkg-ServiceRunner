@@ -18,10 +18,11 @@ go get github.com/VU-ASE/pkg-ServiceRunner
 > [!TIP]
 > You can install a specific version like this: `go get github.com/VU-ASE/pkg-ServiceRunner@v0.1.2` to improve reproducibility
 
-Then, in your `main()` function, call the `servicerunner.Run` function. This function needs two parameters:
+Then, in your `main()` function, call the `servicerunner.Run` function. This function needs three parameters:
 
 - Your "entrypoint" function to run. This entrypoint function should take as input a `servicerunner.ResolvedService` argument (read more about this below) and a `TuningState` argument: this is the initial tuning state, fetched from the system manager. It should also have return type `error`
 - A tuning state callback function. This function should take as input a `TuningState` argument and is called whenever a new tuning state is available
+- A boolean `disableRegistration` to indicate whether the ServiceRunner should perform service registration for you. If set to true, the ServiceRunner will not attempt service registration, dependency resolving and tuning state fetching.
 
 ### Example: basic *main.go*
 ```go
@@ -44,7 +45,7 @@ func onNewTuningstate(ts *protobuf_msgs.TuningState) {
 
 // Let the servicerunner take care of everything
 func main() {
-	servicerunner.Run(run, onNewTuningState)
+	servicerunner.Run(run, onNewTuningState, false)
 }
 ```
 
@@ -137,7 +138,7 @@ func onNewTuningstate(ts *protobuf_msgs.TuningState) {
 
 // Let the servicerunner take care of everything
 func main() {
-	servicerunner.Run(run, onNewTuningState)
+	servicerunner.Run(run, onNewTuningState, false)
 }
 ```
 
@@ -169,9 +170,6 @@ Some examples:
 ```
 
 ## Important
-
-**Service name `systemmanager` is a reserved name**
-When specifying your service name as `systemmanager` in *service.yaml*, the ServiceRunner will not attempt service registration, dependency resolving and tuning state fetching. (As the system manager cannot register with itself).
 
 **Outputs with `localhost` in their address will be rewritten**
 A service that wants to use its own outputs in its *service.yaml* file will get a rewritten version of their output address to make sure that you can use the address to listen on all interfaces (useful when using zeroMQ). This is best illustrated in this example:

@@ -70,7 +70,7 @@ func setupLogging(debug bool, outputPath string, service serviceDefinition) {
 }
 
 // Used to start the program with the correct arguments and logging, with service discovery registration and all dependencies resolved
-func Run(main MainFunction, onTuningState TuningStateCallbackFunction) {
+func Run(main MainFunction, onTuningState TuningStateCallbackFunction, disableRegistration bool) {
 	// Parse args
 	debug := flag.Bool("debug", false, "show all logs (including debug)")
 	output := flag.String("output", "", "path of the output file to log to")
@@ -97,8 +97,8 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction) {
 	resolvedDependencies := make([]ResolvedDependency, 0)
 
 	// Don't register the system manager with itself
-	if strings.ToLower(service.Name) == "systemmanager" {
-		log.Info().Msg("Service registration skipped. This is the system manager.")
+	if disableRegistration {
+		log.Info().Msg("Service registration skipped was disabled by the user.")
 	} else {
 		// Fetch the endpoints of the system manager
 		systemManagerDetails, err := getSystemManagerDetails()
