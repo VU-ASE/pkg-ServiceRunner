@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v1.4.0...v2.0.0) (2024-02-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* automatically fetch SystemManager broadcast address
+
+### Features
+
+* automatically fetch SystemManager broadcast address ([6867219](https://github.com/VU-ASE/pkg-ServiceRunner/commit/686721950d1563dfe4545655e2deb3a6ea0dfecb))
+
 ## [1.4.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v1.3.0...v1.4.0) (2024-02-06)
 
 
