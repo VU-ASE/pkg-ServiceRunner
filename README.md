@@ -12,11 +12,11 @@ The *ServiceRunner* package provides all the essentials you need to develop and 
 First, add the service runner package to your Go module:
 
 ```bash
-go get github.com/VU-ASE/pkg-ServiceRunner
+go get github.com/VU-ASE/pkg-ServiceRunner/v2
 ```
 
 > [!TIP]
-> You can install a specific version like this: `go get github.com/VU-ASE/pkg-ServiceRunner@v0.1.2` to improve reproducibility
+> You can install a specific version like this: `go get github.com/VU-ASE/pkg-ServiceRunner/v2@v2.0.1` to improve reproducibility
 
 Then, in your `main()` function, call the `servicerunner.Run` function. This function needs three parameters:
 
