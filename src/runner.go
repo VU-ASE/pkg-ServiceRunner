@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	pb_systemmanager_messages "github.com/VU-ASE/pkg-CommunicationDefinitions/packages/go/systemmanager"
@@ -21,24 +20,14 @@ type MainFunction func(serviceInformation ResolvedService, initialTuningState *p
 
 // The system manager exposes two endpoints: a pub/sub endpoint for broadcasting service registration and a req/rep endpoint for registering services and resolving dependencies
 // this struct is used to store the addresses of these endpoints
-type SystemManagerDetails struct {
-	serverAddress    string // used for req/rep communication
-	publisherAddress string // used for pub/sub communication
-}
 
-func getSystemManagerDetails() (SystemManagerDetails, error) {
+// This address should be set in the environment variable ASE_SYSMAN_SERVER_ADDRESS (for req/rep communication)
+func getSystemManagerRepReqAddress() (string, error) {
 	serverAddr := os.Getenv("ASE_SYSMAN_SERVER_ADDRESS")
 	if serverAddr == "" {
-		return SystemManagerDetails{}, fmt.Errorf("Cannot reach system manager: environment variable ASE_SYSMAN_SERVER_ADDRESS is not set, do not know how to reach system manager :(")
+		return "", fmt.Errorf("Cannot reach system manager: environment variable ASE_SYSMAN_SERVER_ADDRESS is not set, do not know how to reach system manager :(")
 	}
-	pubAddr := os.Getenv("ASE_SYSMAN_BROADCAST_ADDRESS")
-	if pubAddr == "" {
-		return SystemManagerDetails{}, fmt.Errorf("Cannot reach system manager: environment variable ASE_SYSMAN_BROADCAST_ADDRESS is not set, do not know how to reach system manager :(")
-	}
-	return SystemManagerDetails{
-		serverAddress:    serverAddr,
-		publisherAddress: pubAddr,
-	}, nil
+	return serverAddr, nil
 }
 
 // Configures log level and output
@@ -96,18 +85,22 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction, disableRe
 	// Try registering the service with the system manager
 	resolvedDependencies := make([]ResolvedDependency, 0)
 
+	// The address on which to send requests to the system manager
+	// will be filled in according to the environment variable
+	systemManagerRepReqAddress := ""
+
 	// Don't register the system manager with itself
 	if disableRegistration {
 		log.Info().Msg("Service registration skipped was disabled by the user.")
 	} else {
-		// Fetch the endpoints of the system manager
-		systemManagerDetails, err := getSystemManagerDetails()
+		// Where can we reach the system manager?
+		systemManagerRepReqAddress, err = getSystemManagerRepReqAddress()
 		if err != nil {
 			log.Fatal().Err(err).Msg("Error getting system manager details")
 		}
 
 		// Register the service with the system manager
-		resolvedDependencies, err = registerService(service, systemManagerDetails)
+		resolvedDependencies, err = registerService(service, systemManagerRepReqAddress)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Error registering service")
 		}
@@ -123,16 +116,10 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction, disableRe
 
 	// Receive the initial tuning state
 	tuningState := &pb_systemmanager_messages.TuningState{}
-	if strings.ToLower(service.Name) == "systemmanager" {
-		log.Info().Msg("Tuning state skipped. This is the system manager.")
+	if disableRegistration {
+		log.Info().Msg("Tuning state fetch skipped was disabled by the user.")
 	} else {
-		// Fetch the endpoints of the system manager
-		systemManagerDetails, err := getSystemManagerDetails()
-		if err != nil {
-			log.Fatal().Err(err).Msg("Error getting system manager details")
-		}
-
-		tuningState, err = requestTuningState(systemManagerDetails)
+		tuningState, err = requestTuningState(systemManagerRepReqAddress)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Error requesting tuning state")
 		}
@@ -151,17 +138,17 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction, disableRe
 		err = main(serviceInformation, tuningState)
 	}
 
-	if !*noLiveTuning && strings.ToLower(service.Name) == "systemmanager" {
+	if !*noLiveTuning && !disableRegistration {
+		// We should be able to find the system manager broadcast address from our resolved dependencies
+		sysmanBroadcastAddr, err := serviceInformation.GetDependencyAddress("systemmanager", "broadcast")
+		if err != nil {
+			log.Fatal().Err(err).Msg("Error getting system manager broadcast address")
+		}
+
 		// Listen for tuning state updates, and callback when a new tuning state is received
 		go func() {
 			for {
-				// Fetch the endpoints of the system manager
-				systemManagerDetails, err := getSystemManagerDetails()
-				if err != nil {
-					log.Fatal().Err(err).Msg("Error getting system manager details")
-				}
-
-				err = listenForTuningBroadcasts(onTuningState, systemManagerDetails)
+				err = listenForTuningBroadcasts(onTuningState, sysmanBroadcastAddr)
 				if err != nil {
 					log.Err(err).Msg("Error listening for tuning state broadcasts")
 				}

@@ -57,8 +57,6 @@ service, the ServiceRunner needs to know how to reach the SystemManager module. 
 ```bash
 # set the SystemManager req/res endpoint
 export ASE_SYSMAN_SERVER_ADDRESS=tcp://localhost:1337
-# set the SystemManager pub/sub (broadcasting) endpoint
-export ASE_SYSMAN_BROADCAST_ADDRESS=tcp://localhost:1338
 ```
 
 ### Registering your service

@@ -37,15 +37,15 @@ func allDependenciesResolved(service serviceDefinition, resolvedDependencies []R
 }
 
 // Will contact the discovery service to get the addresses of each dependency and register this service with the service discovery service (the system manager)
-func registerService(service serviceDefinition, sysmanDetails SystemManagerDetails) ([]ResolvedDependency, error) {
+func registerService(service serviceDefinition, sysmanReqRepAddr string) ([]ResolvedDependency, error) {
 	// create a zmq client socket to the system manager
 	client, err := zmq.NewSocket(zmq.REQ)
 	if err != nil {
 		return nil, fmt.Errorf("Could not open ZMQ connection to system manager: %s", err)
 	}
 	defer client.Close()
-	log.Debug().Str("service", service.Name).Str("address", sysmanDetails.serverAddress).Msg("Connecting to system manager")
-	err = client.Connect(sysmanDetails.serverAddress)
+	log.Debug().Str("service", service.Name).Str("address", sysmanReqRepAddr).Msg("Connecting to system manager")
+	err = client.Connect(sysmanReqRepAddr)
 	if err != nil {
 		return nil, fmt.Errorf("Could not connect to system manager: %s", err)
 	}
@@ -95,7 +95,7 @@ func registerService(service serviceDefinition, sysmanDetails SystemManagerDetai
 				return
 			}
 			if (count) > 5 {
-				log.Warn().Str("service", service.Name).Msgf("Still waiting for response from system manager. Are you sure the system manager is running and available at '%s'?", sysmanDetails.serverAddress)
+				log.Warn().Str("service", service.Name).Msgf("Still waiting for response from system manager. Are you sure the system manager is running and available at '%s'?", sysmanReqRepAddr)
 			} else {
 				log.Info().Str("service", service.Name).Msg("Waiting for response from system manager")
 			}
@@ -150,7 +150,11 @@ func registerService(service serviceDefinition, sysmanDetails SystemManagerDetai
 	// registration was successfull!
 	log.Info().Str("service", service.Name).Msg("Service registration successful")
 
-	// Resolve dependencies, if there are any
+	// Resolve dependencies, always request the system manager broadcast address
+	service.Dependencies = append(service.Dependencies, dependency{
+		ServiceName: "systemmanager",
+		OutputName:  "broadcast",
+	})
 	return resolveDependencies(service, client)
 }
 

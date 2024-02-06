@@ -11,14 +11,14 @@ import (
 )
 
 // Listens on the broadcast channel for broadcasts from the system manager
-func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, sysmanDetails SystemManagerDetails) error {
+func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, sysmanBroadcastAddr string) error {
 	// Subscribe to the system manager
 	broadcast, err := zmq.NewSocket(zmq.SUB)
 	if err != nil {
 		return err
 	}
 	defer broadcast.Close()
-	err = broadcast.Connect(sysmanDetails.publisherAddress)
+	err = broadcast.Connect(sysmanBroadcastAddr)
 	if err != nil {
 		return err
 	}
@@ -54,15 +54,15 @@ func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, sysman
 	}
 }
 
-func requestTuningState(sysmanDetails SystemManagerDetails) (*pb_systemmanager_messages.TuningState, error) {
+func requestTuningState(sysmanReqRepAddr string) (*pb_systemmanager_messages.TuningState, error) {
 	// create a zmq client socket to the system manager
 	client, err := zmq.NewSocket(zmq.REQ)
 	if err != nil {
 		return nil, fmt.Errorf("Could not open ZMQ connection to system manager: %s", err)
 	}
 	defer client.Close()
-	log.Debug().Str("address", sysmanDetails.serverAddress).Msg("Connecting to system manager to fetch tuning state")
-	err = client.Connect(sysmanDetails.serverAddress)
+	log.Debug().Str("address", sysmanReqRepAddr).Msg("Connecting to system manager to fetch tuning state")
+	err = client.Connect(sysmanReqRepAddr)
 	if err != nil {
 		return nil, fmt.Errorf("Could not connect to system manager: %s", err)
 	}
