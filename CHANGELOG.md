@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.0.1...v2.1.0) (2024-02-06)
+
+
+### Features
+
+* added support for ServiceList requests ([bc2d58d](https://github.com/VU-ASE/pkg-ServiceRunner/commit/bc2d58d4ddd8adf1cebdeaa5396fc334ed4b8795))
+
 ## [2.0.1](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.0.0...v2.0.1) (2024-02-06)
 
 
