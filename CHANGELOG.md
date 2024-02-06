@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v1.3.0...v1.4.0) (2024-02-06)
+
+
+### Features
+
+* enabled manual service registration disabling ([2f145e6](https://github.com/VU-ASE/pkg-ServiceRunner/commit/2f145e6ac32eed1e357cd4f53c5a0d09626df632))
+* rewrite dependency addresses automatically ([8c1c7a9](https://github.com/VU-ASE/pkg-ServiceRunner/commit/8c1c7a91c39aad9420c8a3dfac89d7e76082c295))
+
 ## [1.3.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v1.2.1...v1.3.0) (2024-01-25)
 
 
