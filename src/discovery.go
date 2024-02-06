@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	pb_systemmanager_messages "github.com/VU-ASE/pkg-CommunicationDefinitions/packages/go/systemmanager"
-	customerrors "github.com/VU-ASE/pkg-ServiceRunner/src/errors"
+	pb_systemmanager_messages "github.com/VU-ASE/pkg-CommunicationDefinitions/v2/packages/go/systemmanager"
+	customerrors "github.com/VU-ASE/pkg-ServiceRunner/v2/src/errors"
 	zmq "github.com/pebbe/zmq4"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"

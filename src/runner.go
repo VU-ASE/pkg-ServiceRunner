@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	pb_systemmanager_messages "github.com/VU-ASE/pkg-CommunicationDefinitions/packages/go/systemmanager"
+	pb_systemmanager_messages "github.com/VU-ASE/pkg-CommunicationDefinitions/v2/packages/go/systemmanager"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
