@@ -334,3 +334,52 @@ func getDependencyFromServiceInformation(status *pb_systemmanager_messages.Servi
 
 	return ResolvedDependency{}, customerrors.OutputNotExposed
 }
+
+// Get a list of all services
+func getServiceList(sysmanReqRepAddr string) (*pb_systemmanager_messages.ServiceList, error) {
+	// create a zmq client socket to the system manager
+	client, err := zmq.NewSocket(zmq.REQ)
+	if err != nil {
+		return nil, fmt.Errorf("Could not open ZMQ connection to system manager: %s", err)
+	}
+	defer client.Close()
+	log.Debug().Str("address", sysmanReqRepAddr).Msg("Connecting to system manager")
+	err = client.Connect(sysmanReqRepAddr)
+	if err != nil {
+		return nil, fmt.Errorf("Could not connect to system manager: %s", err)
+	}
+
+	// create a request message
+	reqMsg := pb_systemmanager_messages.SystemManagerMessage{
+		Msg: &pb_systemmanager_messages.SystemManagerMessage_ServiceListRequest{
+			ServiceListRequest: &pb_systemmanager_messages.ServiceListRequest{},
+		},
+	}
+	// marshal message
+	msgBytes, err := proto.Marshal(&reqMsg)
+	if err != nil {
+		return nil, err
+	}
+	// send the request to the system manager
+	_, err = client.SendBytes(msgBytes, 0)
+	if err != nil {
+		return nil, err
+	}
+	// wait for a response from the system manager
+	resBytes, err := client.RecvBytes(0)
+	if err != nil {
+		return nil, err
+	}
+	// parse the response
+	response := pb_systemmanager_messages.SystemManagerMessage{}
+	err = proto.Unmarshal(resBytes, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	serviceList := response.GetServiceList()
+	if serviceList == nil {
+		return nil, fmt.Errorf("Received empty response from system manager")
+	}
+	return serviceList, nil
+}

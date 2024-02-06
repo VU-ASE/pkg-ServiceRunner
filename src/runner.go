@@ -16,7 +16,7 @@ import (
 type TuningStateCallbackFunction func(tuningState *pb_systemmanager_messages.TuningState)
 
 // The main function to run
-type MainFunction func(serviceInformation ResolvedService, initialTuningState *pb_systemmanager_messages.TuningState) error
+type MainFunction func(serviceInformation ResolvedService, sysmanInformation SystemManagerInfo, initialTuningState *pb_systemmanager_messages.TuningState) error
 
 // The system manager exposes two endpoints: a pub/sub endpoint for broadcasting service registration and a req/rep endpoint for registering services and resolving dependencies
 // this struct is used to store the addresses of these endpoints
@@ -87,20 +87,23 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction, disableRe
 
 	// The address on which to send requests to the system manager
 	// will be filled in according to the environment variable
-	systemManagerRepReqAddress := ""
+	sysmanInfo := SystemManagerInfo{
+		RepReqAddress:    "",
+		BroadcastAddress: "",
+	}
 
 	// Don't register the system manager with itself
 	if disableRegistration {
 		log.Info().Msg("Service registration skipped was disabled by the user.")
 	} else {
 		// Where can we reach the system manager?
-		systemManagerRepReqAddress, err = getSystemManagerRepReqAddress()
+		sysmanInfo.RepReqAddress, err = getSystemManagerRepReqAddress()
 		if err != nil {
 			log.Fatal().Err(err).Msg("Error getting system manager details")
 		}
 
 		// Register the service with the system manager
-		resolvedDependencies, err = registerService(service, systemManagerRepReqAddress)
+		resolvedDependencies, err = registerService(service, sysmanInfo.RepReqAddress)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Error registering service")
 		}
@@ -119,28 +122,15 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction, disableRe
 	if disableRegistration {
 		log.Info().Msg("Tuning state fetch skipped was disabled by the user.")
 	} else {
-		tuningState, err = requestTuningState(systemManagerRepReqAddress)
+		tuningState, err = requestTuningState(sysmanInfo.RepReqAddress)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Error requesting tuning state")
 		}
 	}
 
-	log.Info().Str("service", service.Name).Msg("Starting service")
-	backoff := 1
-	log.Info().Msg("Starting service")
-	err = main(serviceInformation, tuningState)
-	if *retries > 0 {
-		*retries--
-		backoff *= 2
-		log.Warn().Err(err).Int("retries left", *retries).Int("backoff", backoff).Msg("Service quit unexpectedly. Retrying... ")
-		time.Sleep(time.Duration(backoff) * time.Second)
-		log.Info().Msg("Starting service")
-		err = main(serviceInformation, tuningState)
-	}
-
 	if !*noLiveTuning && !disableRegistration {
 		// We should be able to find the system manager broadcast address from our resolved dependencies
-		sysmanBroadcastAddr, err := serviceInformation.GetDependencyAddress("systemmanager", "broadcast")
+		sysmanInfo.BroadcastAddress, err = serviceInformation.GetDependencyAddress("systemmanager", "broadcast")
 		if err != nil {
 			log.Fatal().Err(err).Msg("Error getting system manager broadcast address")
 		}
@@ -148,12 +138,25 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction, disableRe
 		// Listen for tuning state updates, and callback when a new tuning state is received
 		go func() {
 			for {
-				err = listenForTuningBroadcasts(onTuningState, sysmanBroadcastAddr)
+				err = listenForTuningBroadcasts(onTuningState, sysmanInfo.BroadcastAddress)
 				if err != nil {
 					log.Err(err).Msg("Error listening for tuning state broadcasts")
 				}
 			}
 		}()
+	}
+
+	log.Info().Str("service", service.Name).Msg("Starting service")
+	backoff := 1
+	log.Info().Msg("Starting service")
+	err = main(serviceInformation, sysmanInfo, tuningState)
+	if *retries > 0 {
+		*retries--
+		backoff *= 2
+		log.Warn().Err(err).Int("retries left", *retries).Int("backoff", backoff).Msg("Service quit unexpectedly. Retrying... ")
+		time.Sleep(time.Duration(backoff) * time.Second)
+		log.Info().Msg("Starting service")
+		err = main(serviceInformation, sysmanInfo, tuningState)
 	}
 
 	if err != nil {

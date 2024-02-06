@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	pb_systemmanager_messages "github.com/VU-ASE/pkg-CommunicationDefinitions/v2/packages/go/systemmanager"
 	"github.com/rs/zerolog/log"
 )
 
@@ -61,4 +62,15 @@ func (service ResolvedService) GetOutputAddress(outputName string) (string, erro
 		}
 	}
 	return "", fmt.Errorf("Output '%s' not found. Was it defined in service.yaml?", outputName)
+}
+
+// Information about the system manager. This struct has useful methods implemented to repeat the same operations on the dependencies.
+type SystemManagerInfo struct {
+	RepReqAddress    string // the req/rep address of the system manager
+	BroadcastAddress string // the public broadcast address of the system manager
+}
+
+// Utility function to get a list of all services running on the system manager
+func (sysman SystemManagerInfo) GetAllServices() (*pb_systemmanager_messages.ServiceList, error) {
+	return getServiceList(sysman.RepReqAddress)
 }

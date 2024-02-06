@@ -20,7 +20,7 @@ go get github.com/VU-ASE/pkg-ServiceRunner/v2
 
 Then, in your `main()` function, call the `servicerunner.Run` function. This function needs three parameters:
 
-- Your "entrypoint" function to run. This entrypoint function should take as input a `servicerunner.ResolvedService` argument (read more about this below) and a `TuningState` argument: this is the initial tuning state, fetched from the system manager. It should also have return type `error`
+- Your "entrypoint" function to run. This entrypoint function should take as input a `servicerunner.ResolvedService` argument (read more about this below), a `serviceRunner.SystemManagerInfo` argument and a `TuningState` argument: this is the initial tuning state, fetched from the system manager. It should also have return type `error`
 - A tuning state callback function. This function should take as input a `TuningState` argument and is called whenever a new tuning state is available
 - A boolean `disableRegistration` to indicate whether the ServiceRunner should perform service registration for you. If set to true, the ServiceRunner will not attempt service registration, dependency resolving and tuning state fetching.
 
@@ -34,7 +34,7 @@ import (
 )
 
 // Your entrypoint function
-func run(service servicerunner.ResolvedService, initialTuningState *protobuf_msgs.TuningState) error {
+func run(service servicerunner.ResolvedService, sysmanInfo serviceRunner.SystemManagerInfo, initialTuningState *protobuf_msgs.TuningState) error {
 	// all your application code can go here!
 }
 
@@ -115,8 +115,8 @@ import (
 )
 
 // Your entrypoint function
-func run(service servicerunner.ResolvedService, initialTuningState *protobuf_msgs.TuningState) error {
-    // Get your own output address, notice that outputC corresponds with the service.yaml outputs
+func run(service servicerunner.ResolvedService, sysmanInfo serviceRunner.SystemManagerInfo, initialTuningState *protobuf_msgs.TuningState) error {
+  // Get your own output address, notice that outputC corresponds with the service.yaml outputs
 	outputCaddr, err := service.GetOutputAddress("outputC")
 	if err != nil {
 		return err
