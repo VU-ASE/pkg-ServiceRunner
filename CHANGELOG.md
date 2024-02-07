@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.1](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.2.0...v2.2.1) (2024-02-07)
+
+
+### Bug Fixes
+
+* updated tests ([855b964](https://github.com/VU-ASE/pkg-ServiceRunner/commit/855b964d8db438d0b9b42cb94008ce077d18b8a7))
+
 ## [2.2.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.1.0...v2.2.0) (2024-02-07)
 
 
