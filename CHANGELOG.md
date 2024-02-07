@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.1.0...v2.2.0) (2024-02-07)
+
+
+### Features
+
+* added support for dynamic and static options ([2b2bf54](https://github.com/VU-ASE/pkg-ServiceRunner/commit/2b2bf549d0ce92a03e59893ad738cd18f24fc7f2))
+
 ## [2.1.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.0.1...v2.1.0) (2024-02-06)
 
 
