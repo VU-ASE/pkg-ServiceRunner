@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -59,6 +60,40 @@ func registerService(service serviceDefinition, sysmanReqRepAddr string) ([]Reso
 			Address: output.Address,
 		})
 	}
+	options := []*pb_systemmanager_messages.ServiceOption{}
+	for _, option := range service.Options {
+		// convert our struct to the ServiceOption protobuf message
+		newOption := &pb_systemmanager_messages.ServiceOption{
+			Name:    option.Name,
+			Mutable: option.Mutable,
+		}
+		if option.DefaultValue != "" {
+			switch option.Type {
+			case "string":
+				newOption.Type = pb_systemmanager_messages.ServiceOption_STRING
+				newOption.StringDefault = option.DefaultValue
+			case "int":
+				newOption.Type = pb_systemmanager_messages.ServiceOption_INT
+				intval, err := strconv.Atoi(option.DefaultValue)
+				if err != nil {
+					return nil, fmt.Errorf("Option '%s' has type int, but a default value that is not an int: %s", option.Name, option.DefaultValue)
+				} else {
+					newOption.IntDefault = int32(intval)
+				}
+			case "float":
+				newOption.Type = pb_systemmanager_messages.ServiceOption_FLOAT
+				floatval, err := strconv.ParseFloat(option.DefaultValue, 64)
+				if err != nil {
+					return nil, fmt.Errorf("Option '%s' has type float, but a default value that is not a float: %s", option.Name, option.DefaultValue)
+				} else {
+					newOption.FloatDefault = float32(floatval)
+				}
+			default:
+				return nil, fmt.Errorf("Option '%s' has an unknown type: %s", option.Name, option.Type)
+			}
+		}
+		options = append(options, newOption)
+	}
 	// create a registration message
 	regMsg := pb_systemmanager_messages.SystemManagerMessage{
 		Msg: &pb_systemmanager_messages.SystemManagerMessage_Service{
@@ -68,6 +103,7 @@ func registerService(service serviceDefinition, sysmanReqRepAddr string) ([]Reso
 					Pid:  int32(os.Getpid()),
 				},
 				Endpoints: endpoints,
+				Options:   options,
 			},
 		},
 	}
@@ -209,7 +245,6 @@ func resolveDependencies(service serviceDefinition, serverSocket *zmq.Socket) ([
 		}
 	}
 	return resolvedDependencies, nil
-
 }
 
 // Extract the unique service names of all unresolved dependencies

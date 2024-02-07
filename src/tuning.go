@@ -2,6 +2,7 @@ package servicerunner
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	pb_systemmanager_messages "github.com/VU-ASE/pkg-CommunicationDefinitions/v2/packages/go/systemmanager"
@@ -11,7 +12,7 @@ import (
 )
 
 // Listens on the broadcast channel for broadcasts from the system manager
-func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, sysmanBroadcastAddr string) error {
+func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, initialTuning *pb_systemmanager_messages.TuningState, sysmanBroadcastAddr string) error {
 	// Subscribe to the system manager
 	broadcast, err := zmq.NewSocket(zmq.SUB)
 	if err != nil {
@@ -47,10 +48,11 @@ func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, sysman
 		if tuningState == nil {
 			continue
 		}
+		merged := mergeTuningStates(initialTuning, tuningState)
 
 		// Send the tuning state to the callback function
 		log.Debug().Msg("Received tuning state broadcast from system manager")
-		onTuningState(tuningState)
+		onTuningState(merged)
 	}
 }
 
@@ -127,4 +129,131 @@ func requestTuningState(sysmanReqRepAddr string) (*pb_systemmanager_messages.Tun
 	}
 
 	return responseState, nil
+}
+
+// Used to convert the options present in the service.yaml file to a tuning state
+func convertOptionsToTuningState(options []option) (*pb_systemmanager_messages.TuningState, error) {
+	tuningState := pb_systemmanager_messages.TuningState{
+		Timestamp:         uint64(time.Now().Unix()),
+		DynamicParameters: make([]*pb_systemmanager_messages.TuningState_Parameter, 0),
+	}
+	for _, opt := range options {
+		if opt.DefaultValue != "" {
+			newParam := pb_systemmanager_messages.TuningState_Parameter{}
+			switch opt.Type {
+			case "string":
+				newParam.Parameter = &pb_systemmanager_messages.TuningState_Parameter_String_{
+					String_: &pb_systemmanager_messages.TuningState_Parameter_StringParameter{
+						Key:   opt.Name,
+						Value: opt.DefaultValue,
+					},
+				}
+			case "int":
+				intval, err := strconv.Atoi(opt.DefaultValue)
+				if err != nil {
+					return nil, fmt.Errorf("Error converting default value of option '%s' to int: %s", opt.Name, err)
+				}
+				newParam.Parameter = &pb_systemmanager_messages.TuningState_Parameter_Int{
+					Int: &pb_systemmanager_messages.TuningState_Parameter_IntParameter{
+						Key:   opt.Name,
+						Value: int64(intval),
+					},
+				}
+			case "float":
+				floatval, err := strconv.ParseFloat(opt.DefaultValue, 32)
+				if err != nil {
+					return nil, fmt.Errorf("Error converting default value of option '%s' to float: %s", opt.Name, err)
+				}
+				newParam.Parameter = &pb_systemmanager_messages.TuningState_Parameter_Float{
+					Float: &pb_systemmanager_messages.TuningState_Parameter_FloatParameter{
+						Key:   opt.Name,
+						Value: float32(floatval),
+					},
+				}
+			default:
+				return nil, fmt.Errorf("Unknown type '%s' for option '%s'", opt.Type, opt.Name)
+			}
+
+			if newParam.Parameter != nil {
+				tuningState.DynamicParameters = append(tuningState.DynamicParameters, &newParam)
+			}
+		}
+	}
+	return &tuningState, nil
+}
+
+func getUnsetOptions(tuningState *pb_systemmanager_messages.TuningState, options []option) []option {
+	unsetOptions := make([]option, 0)
+	for _, opt := range options {
+		var err error = nil
+		switch opt.Type {
+		case "string":
+			_, err = GetTuningString(opt.Name, tuningState)
+
+		case "int":
+			_, err = GetTuningInt(opt.Name, tuningState)
+
+		case "float":
+			_, err = GetTuningFloat(opt.Name, tuningState)
+		default:
+			log.Err(err).Msg("Error getting option from tuning state")
+			err = fmt.Errorf("Unknown type '%s' for option '%s'", opt.Type, opt.Name)
+		}
+		if err != nil {
+			unsetOptions = append(unsetOptions, opt)
+		}
+	}
+	return unsetOptions
+}
+
+// Parses a parameter from the tuning state and returns the key
+func getKeyAndType(param *pb_systemmanager_messages.TuningState_Parameter) (string, string) {
+	if param.GetString_() != nil {
+		return param.GetString_().Key, "string"
+	} else if param.GetInt() != nil {
+		return param.GetInt().Key, "int"
+	} else if param.GetFloat() != nil {
+		return param.GetFloat().Key, "float"
+	}
+	return "", ""
+}
+
+// Check if a key with specific type exists in the tuning state
+func keyExists(key string, keyType string, tuningState *pb_systemmanager_messages.TuningState) bool {
+	if tuningState == nil {
+		return false
+	}
+	for _, tuningValue := range tuningState.DynamicParameters {
+		if tuningValue.GetString_().Key == key && keyType == "string" {
+			return true
+		} else if tuningValue.GetInt().Key == key && keyType == "int" {
+			return true
+		} else if tuningValue.GetFloat().Key == key && keyType == "float" {
+			return true
+		}
+	}
+	return false
+}
+
+func mergeTuningStates(old *pb_systemmanager_messages.TuningState, new *pb_systemmanager_messages.TuningState) *pb_systemmanager_messages.TuningState {
+	if old == nil {
+		return new
+	}
+	if new == nil {
+		return old
+	}
+	merged := pb_systemmanager_messages.TuningState{
+		Timestamp:         new.Timestamp,
+		DynamicParameters: make([]*pb_systemmanager_messages.TuningState_Parameter, 0),
+	}
+	// Add all the old parameters that are not in the new tuning state
+	for _, param := range old.DynamicParameters {
+		key, keyType := getKeyAndType(param)
+		if !keyExists(key, keyType, new) {
+			merged.DynamicParameters = append(merged.DynamicParameters, param)
+		}
+	}
+	// Add all the new parameters, overwriting any old ones
+	merged.DynamicParameters = append(merged.DynamicParameters, new.DynamicParameters...)
+	return &merged
 }

@@ -74,3 +74,54 @@ type SystemManagerInfo struct {
 func (sysman SystemManagerInfo) GetAllServices() (*pb_systemmanager_messages.ServiceList, error) {
 	return getServiceList(sysman.RepReqAddress)
 }
+
+// Utility function to easily read values from the tuning state
+func GetTuningInt(key string, tuningState *pb_systemmanager_messages.TuningState) (int, error) {
+	if tuningState == nil {
+		return 0, fmt.Errorf("Tuning state is nil")
+	}
+
+	// Iterate over all the tuning state values
+	for _, tuningValue := range tuningState.DynamicParameters {
+		val := tuningValue.GetInt()
+		if val != nil && val.Key == key {
+			return int(val.Value), nil
+		}
+	}
+
+	return 0, fmt.Errorf("Key '%s' not found in tuning state", key)
+}
+
+// Utility function to easily read values from the tuning state
+func GetTuningString(key string, tuningState *pb_systemmanager_messages.TuningState) (string, error) {
+	if tuningState == nil {
+		return "", fmt.Errorf("Tuning state is nil")
+	}
+
+	// Iterate over all the tuning state values
+	for _, tuningValue := range tuningState.DynamicParameters {
+		val := tuningValue.GetString_()
+		if val != nil && val.Key == key {
+			return val.Value, nil
+		}
+	}
+
+	return "", fmt.Errorf("Key '%s' not found in tuning state", key)
+}
+
+// Utility function to easily read values from the tuning state
+func GetTuningFloat(key string, tuningState *pb_systemmanager_messages.TuningState) (float32, error) {
+	if tuningState == nil {
+		return 0, fmt.Errorf("Tuning state is nil")
+	}
+
+	// Iterate over all the tuning state values
+	for _, tuningValue := range tuningState.DynamicParameters {
+		val := tuningValue.GetFloat()
+		if val != nil && val.Key == key {
+			return val.Value, nil
+		}
+	}
+
+	return 0, fmt.Errorf("Key '%s' not found in tuning state", key)
+}

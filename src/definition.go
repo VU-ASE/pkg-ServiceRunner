@@ -3,6 +3,7 @@ package servicerunner
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/go-yaml/yaml"
 )
@@ -17,6 +18,7 @@ type serviceDefinition struct {
 	Description  string       `yaml:"description"`
 	Dependencies []dependency `yaml:"dependencies"`
 	Outputs      []output     `yaml:"outputs"`
+	Options      []option     `yaml:"options"`
 }
 
 // A dependency definition as it should be included in the yaml file
@@ -33,6 +35,75 @@ type output struct {
 	Name string `yaml:"name"`
 	// the address of the output that this service will produce
 	Address string `yaml:"address"`
+}
+
+// A configuration option for the service, that can be either set in the yaml file or be fetched from tuning
+type option struct {
+	// the name of the option
+	Name string `yaml:"name"`
+	// can this option be updated at runtime?
+	Mutable bool `yaml:"mutable"`
+	// the type of the option
+	Type string `yaml:"type"`
+	// the value of the option (if provided)
+	DefaultValue string `yaml:"default"`
+}
+
+func validateServiceDefinitionOption(option option) error {
+	// name not empty?
+	if option.Name == "" {
+		return fmt.Errorf("Option name is empty")
+	}
+
+	// correct type?
+	if option.Type != "string" && option.Type != "int" && option.Type != "float" {
+		return fmt.Errorf("Option '%s' type must be string, int or float (got %s)", option.Name, option.Type)
+	}
+
+	// if not mutable, default value must be set
+	if !option.Mutable && option.DefaultValue == "" {
+		return fmt.Errorf("Option '%s' has no default value but is also declared not mutable. Add a default value or mark this option as mutable by setting mutable: true", option.Name)
+	}
+
+	// check if default value is of the correct type
+	if option.DefaultValue != "" {
+		switch option.Type {
+		case "string":
+			// no checks needed
+			break
+		case "int":
+			_, err := strconv.Atoi(option.DefaultValue)
+			if err != nil {
+				return fmt.Errorf("Option '%s' has type int, but a default value that is not an int: %s", option.Name, option.DefaultValue)
+			}
+		case "float":
+			_, err := strconv.ParseFloat(option.DefaultValue, 64)
+			if err != nil {
+				return fmt.Errorf("Option '%s' has type float, but a default value that is not a float: %s", option.Name, option.DefaultValue)
+			}
+		}
+	}
+
+	return nil
+}
+
+func validateServiceDefinitionOptions(options []option) error {
+	// check that all options are valid
+	for i, option := range options {
+		err := validateServiceDefinitionOption(option)
+		if err != nil {
+			return err
+		}
+
+		// does an option with the same name exist?
+		for j, otherOption := range options {
+			if i != j && option.Name == otherOption.Name {
+				return fmt.Errorf("Duplicate option: %s", option.Name)
+			}
+		}
+	}
+
+	return nil
 }
 
 func validateServiceDefinition(serviceDefinition serviceDefinition) error {
@@ -77,6 +148,11 @@ func validateServiceDefinition(serviceDefinition serviceDefinition) error {
 				}
 			}
 		}
+	}
+
+	err := validateServiceDefinitionOptions(serviceDefinition.Options)
+	if err != nil {
+		return err
 	}
 
 	return nil

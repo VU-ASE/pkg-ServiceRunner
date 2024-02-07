@@ -15,9 +15,9 @@ outputs:
 # Define options that can be accessed at runtime
 options:
   - name: myfirstoption
-    type: string # can be string, int or float
-    mutable: true # This option can be changed at runtime, default is false
-    default: mydefault # If no value is given, ServiceRunner will wait for a value to be set by tuningstate
+    type: int # can be string, int or float
+    mutable: false 
+    default: thisisastring #! default value is not a string
   - name: mysecondoption
     type: string # can be string, int or float
     mutable: false # This option can be changed at runtime, default is false

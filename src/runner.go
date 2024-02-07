@@ -75,7 +75,7 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction, disableRe
 		if errors.Is(err, os.ErrNotExist) {
 			log.Fatal().Err(err).Msg("Could not open service definition YAML. Use the -service-yaml flag to specify the path to the service definition YAML file")
 		} else {
-			log.Fatal().Err(err).Msg("Error parsing service definition")
+			log.Fatal().Err(err).Msg("Error parsing service definition YAML")
 		}
 	}
 
@@ -118,14 +118,35 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction, disableRe
 	}
 
 	// Receive the initial tuning state
-	tuningState := &pb_systemmanager_messages.TuningState{}
+	initialTuning, err := convertOptionsToTuningState(service.Options)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error converting options to tuning state")
+	}
 	if disableRegistration {
-		log.Info().Msg("Tuning state fetch skipped was disabled by the user.")
+		log.Info().Msg("Network tuning state fetch skipped. Was disabled by the user.")
 	} else {
-		tuningState, err = requestTuningState(sysmanInfo.RepReqAddress)
+		newTuning, err := requestTuningState(sysmanInfo.RepReqAddress)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Error requesting tuning state")
 		}
+		initialTuning = mergeTuningStates(initialTuning, newTuning)
+	}
+
+	// We keep refetching the tuning state until we have resolved (at minimum) all options without default values
+	unresolvedOptions := getUnsetOptions(initialTuning, service.Options)
+	for len(unresolvedOptions) > 0 {
+		log.Info().Msgf("Cannot start service yet. Waiting for %d nresolved option(s) to be resolved throug dynamic tuning. Retrying in 4 seconds.", len(unresolvedOptions))
+		for _, opt := range unresolvedOptions {
+			log.Info().Msgf("- Unresolved option: %s (of type %s)", opt.Name, opt.Type)
+		}
+		time.Sleep(4 * time.Second)
+		newTuning, err := requestTuningState(sysmanInfo.RepReqAddress)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Error requesting tuning state")
+		}
+		log.Info().Msg("Received new tuning state")
+		initialTuning = mergeTuningStates(initialTuning, newTuning)
+		unresolvedOptions = getUnsetOptions(initialTuning, service.Options)
 	}
 
 	if !*noLiveTuning && !disableRegistration {
@@ -138,7 +159,7 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction, disableRe
 		// Listen for tuning state updates, and callback when a new tuning state is received
 		go func() {
 			for {
-				err = listenForTuningBroadcasts(onTuningState, sysmanInfo.BroadcastAddress)
+				err = listenForTuningBroadcasts(onTuningState, initialTuning, sysmanInfo.BroadcastAddress)
 				if err != nil {
 					log.Err(err).Msg("Error listening for tuning state broadcasts")
 				}
@@ -149,14 +170,14 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction, disableRe
 	log.Info().Str("service", service.Name).Msg("Starting service")
 	backoff := 1
 	log.Info().Msg("Starting service")
-	err = main(serviceInformation, sysmanInfo, tuningState)
+	err = main(serviceInformation, sysmanInfo, initialTuning)
 	if *retries > 0 {
 		*retries--
 		backoff *= 2
 		log.Warn().Err(err).Int("retries left", *retries).Int("backoff", backoff).Msg("Service quit unexpectedly. Retrying... ")
 		time.Sleep(time.Duration(backoff) * time.Second)
 		log.Info().Msg("Starting service")
-		err = main(serviceInformation, sysmanInfo, tuningState)
+		err = main(serviceInformation, sysmanInfo, initialTuning)
 	}
 
 	if err != nil {
