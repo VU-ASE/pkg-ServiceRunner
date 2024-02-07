@@ -46,4 +46,4 @@ options:
     mutable: true 
   - name: validfloatwithoutdefault
     type: float 
-    mutable: false 
+    mutable: true 
