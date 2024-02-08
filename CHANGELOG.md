@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.1](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.3.0...v2.3.1) (2024-02-08)
+
+
+### Bug Fixes
+
+* correct pkg-CommunicationDefinitions import ([bf132c4](https://github.com/VU-ASE/pkg-ServiceRunner/commit/bf132c4290196798b3d8975351e44a5b0158d738))
+
 ## [2.3.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.2.1...v2.3.0) (2024-02-08)
 
 
