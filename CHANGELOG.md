@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.2.1...v2.3.0) (2024-02-08)
+
+
+### Features
+
+* implemented dynamic ServiceStatus updates ([62e9532](https://github.com/VU-ASE/pkg-ServiceRunner/commit/62e95322dd7be6a4c7e88e40da2c25816ce09079))
+
 ## [2.2.1](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.2.0...v2.2.1) (2024-02-07)
 
 
