@@ -94,6 +94,14 @@ func registerService(service serviceDefinition, sysmanReqRepAddr string) ([]Reso
 		}
 		options = append(options, newOption)
 	}
+	dependencies := []*pb_systemmanager_messages.ServiceDependency{}
+	for _, dependency := range service.Dependencies {
+		// convert our struct to the ServiceDependency protobuf message
+		dependencies = append(dependencies, &pb_systemmanager_messages.ServiceDependency{
+			ServiceName: dependency.ServiceName,
+			OutputName:  dependency.OutputName,
+		})
+	}
 	// create a registration message
 	regMsg := pb_systemmanager_messages.SystemManagerMessage{
 		Msg: &pb_systemmanager_messages.SystemManagerMessage_Service{
@@ -102,8 +110,9 @@ func registerService(service serviceDefinition, sysmanReqRepAddr string) ([]Reso
 					Name: service.Name,
 					Pid:  int32(os.Getpid()),
 				},
-				Endpoints: endpoints,
-				Options:   options,
+				Endpoints:    endpoints,
+				Options:      options,
+				Dependencies: dependencies,
 			},
 		},
 	}
