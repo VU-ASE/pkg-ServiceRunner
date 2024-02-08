@@ -260,7 +260,7 @@ func extractUniqueServices(dependencies []dependency, resolvedDependencies []Res
 	return uniqueServices
 }
 
-func requestServiceInformation(serviceName string, serverSocket *zmq.Socket) (*pb_systemmanager_messages.ServiceStatus, error) {
+func requestServiceInformation(serviceName string, serverSocket *zmq.Socket) (*pb_systemmanager_messages.Service, error) {
 	// create a request message
 	reqMsg := pb_systemmanager_messages.SystemManagerMessage{
 		Msg: &pb_systemmanager_messages.SystemManagerMessage_ServiceInformationRequest{
@@ -311,21 +311,21 @@ func requestServiceInformation(serviceName string, serverSocket *zmq.Socket) (*p
 	}
 
 	// parse the response
-	// the response must be of type ServiceStatus (see messages/servicediscovery.proto)
+	// the response must be of type Service (see messages/servicediscovery.proto)
 	response := pb_systemmanager_messages.SystemManagerMessage{}
 	err = proto.Unmarshal(resBytes, &response)
-	responseServiceStatus := response.GetServiceStatus()
-	if responseServiceStatus == nil {
-		return nil, fmt.Errorf("Received empty response from system manager, expected ServiceStatus")
+	respondedService := response.GetService()
+	if respondedService == nil {
+		return nil, fmt.Errorf("Received empty response from system manager, expected Service")
 	}
 	if err != nil {
 		return nil, err
-	} else if responseServiceStatus.Status != pb_systemmanager_messages.ServiceStatus_RUNNING {
+	} else if respondedService.Status != pb_systemmanager_messages.ServiceStatus_RUNNING {
 		// pass a detectable error, so that the caller can retry later
 		return nil, customerrors.ServiceNotRunning
 	}
 	// service is running!
-	return responseServiceStatus, nil
+	return respondedService, nil
 }
 
 // Check if a dependency is already resolved (by checking if it is in the list of resolved dependencies)
@@ -345,8 +345,7 @@ func isDependencyOfService(dependency dependency, serviceName string) bool {
 }
 
 // Returns a resolved dependency, given a service status and a dependency
-func getDependencyFromServiceInformation(status *pb_systemmanager_messages.ServiceStatus, dependency dependency) (ResolvedDependency, error) {
-	service := status.GetService()
+func getDependencyFromServiceInformation(service *pb_systemmanager_messages.Service, dependency dependency) (ResolvedDependency, error) {
 	if service == nil {
 		return ResolvedDependency{}, fmt.Errorf("Received empty service status")
 	}
@@ -417,4 +416,53 @@ func getServiceList(sysmanReqRepAddr string) (*pb_systemmanager_messages.Service
 		return nil, fmt.Errorf("Received empty response from system manager")
 	}
 	return serviceList, nil
+}
+
+// Used to update your own service status
+func updateServiceStatus(
+	sysmanReqRepAddr string,
+	identifier *pb_systemmanager_messages.ServiceIdentifier,
+	status pb_systemmanager_messages.ServiceStatus,
+) error {
+	// create a zmq client socket to the system manager
+	socket, err := zmq.NewSocket(zmq.REQ)
+	if err != nil {
+		return fmt.Errorf("Could not open ZMQ connection to system manager: %s", err)
+	}
+	defer socket.Close()
+	err = socket.Connect(sysmanReqRepAddr)
+	if err != nil {
+		return fmt.Errorf("Could not connect to system manager: %s", err)
+	}
+
+	// Create a request message
+	msg := pb_systemmanager_messages.SystemManagerMessage{
+		Msg: &pb_systemmanager_messages.SystemManagerMessage_ServiceStatusUpdate{
+			ServiceStatusUpdate: &pb_systemmanager_messages.ServiceStatusUpdate{
+				Status:  status,
+				Service: identifier,
+			},
+		},
+	}
+
+	// Convert the message to bytes
+	msgBytes, err := proto.Marshal(&msg)
+	if err != nil {
+		return err
+	}
+
+	// Send the request to the system manager
+	_, err = socket.SendBytes(msgBytes, 0)
+	if err != nil {
+		return err
+	}
+
+	// We always need to wait for a response, because of the REQ/REP pattern
+	_, err = socket.RecvBytes(0)
+	if err != nil {
+		return err
+	}
+
+	// We don't actually care about the response
+	return nil
 }

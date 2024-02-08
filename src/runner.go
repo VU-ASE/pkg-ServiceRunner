@@ -167,17 +167,42 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction, disableRe
 		}()
 	}
 
-	log.Info().Str("service", service.Name).Msg("Starting service")
+	// Identifier object to use for coming requests
+	identifier := pb_systemmanager_messages.ServiceIdentifier{
+		Name: service.Name,
+		Pid:  int32(os.Getpid()),
+	}
+
 	backoff := 1
-	log.Info().Msg("Starting service")
-	err = main(serviceInformation, sysmanInfo, initialTuning)
+	// Always at least one try
+	*retries++
+
 	if *retries > 0 {
 		*retries--
-		backoff *= 2
-		log.Warn().Err(err).Int("retries left", *retries).Int("backoff", backoff).Msg("Service quit unexpectedly. Retrying... ")
-		time.Sleep(time.Duration(backoff) * time.Second)
 		log.Info().Msg("Starting service")
+		if !disableRegistration {
+			go func() {
+				_ = updateServiceStatus(
+					sysmanInfo.RepReqAddress,
+					&identifier,
+					pb_systemmanager_messages.ServiceStatus_RUNNING)
+			}()
+		}
 		err = main(serviceInformation, sysmanInfo, initialTuning)
+		if !disableRegistration {
+			go func() {
+				_ = updateServiceStatus(
+					sysmanInfo.RepReqAddress,
+					&identifier,
+					pb_systemmanager_messages.ServiceStatus_STOPPED)
+			}()
+		}
+		backoff *= 2
+		log.Warn().Err(err).Int("retries left", *retries).Int("backoff", backoff).Msg("Service quit unexpectedly.")
+		if *retries > 0 {
+			log.Info().Msg("Retrying service...")
+			time.Sleep(time.Duration(backoff) * time.Second)
+		}
 	}
 
 	if err != nil {

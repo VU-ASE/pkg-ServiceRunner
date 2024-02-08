@@ -6,6 +6,10 @@ github.com/VU-ASE/pkg-CommunicationDefinitions/v2 v2.1.0 h1:+ZoZKSvVaLZXVKPrGvEq
 github.com/VU-ASE/pkg-CommunicationDefinitions/v2 v2.1.0/go.mod h1:S9XOWhpZzLZDBLwetUjBhHnldqBXIIcBkKA2l/fQnRE=
 github.com/VU-ASE/pkg-CommunicationDefinitions/v2 v2.1.1 h1:gj+jZQB1cTz7tbfODkQ3TvQ9oT4uuXA0xzwRpouGz3g=
 github.com/VU-ASE/pkg-CommunicationDefinitions/v2 v2.1.1/go.mod h1:S9XOWhpZzLZDBLwetUjBhHnldqBXIIcBkKA2l/fQnRE=
+github.com/VU-ASE/pkg-CommunicationDefinitions/v2 v2.5.3 h1:uoBqE4j/1n5E2Ijza8qlmiCoXwCf2NC3hgHWkX/4Vjk=
+github.com/VU-ASE/pkg-CommunicationDefinitions/v2 v2.5.3/go.mod h1:S9XOWhpZzLZDBLwetUjBhHnldqBXIIcBkKA2l/fQnRE=
+github.com/VU-ASE/pkg-CommunicationDefinitions/v2 v2.6.0 h1:B34FURCRc1+an0NecIW4+PUx8JlmOWCRpAUbXMMBaAU=
+github.com/VU-ASE/pkg-CommunicationDefinitions/v2 v2.6.0/go.mod h1:S9XOWhpZzLZDBLwetUjBhHnldqBXIIcBkKA2l/fQnRE=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/go-yaml/yaml v2.1.0+incompatible h1:RYi2hDdss1u4YE7GwixGzWwVo47T8UQwnTLB6vQiq+o=
 github.com/go-yaml/yaml v2.1.0+incompatible/go.mod h1:w2MrLa16VYP0jy6N7M5kHaCkaLENm+P+Tv+MfurjSw0=
