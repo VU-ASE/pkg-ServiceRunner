@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.1](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.4.0...v2.4.1) (2024-02-28)
+
+
+### Bug Fixes
+
+* not relying on env var anymore, default is tcp://localhost:1337 ([c230e64](https://github.com/VU-ASE/pkg-ServiceRunner/commit/c230e645cbbc82ec1d731a27be4596043fcc3751))
+
 ## [2.4.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.3.1...v2.4.0) (2024-02-08)
 
 
