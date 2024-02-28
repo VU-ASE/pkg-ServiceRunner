@@ -47,7 +47,7 @@ func setupLogging(debug bool, outputPath string, service serviceDefinition) {
 		if err != nil {
 			panic(err)
 		}
-		log.Logger = zerolog.New(file).With().Timestamp().Logger()
+		log.Logger = zerolog.New(file).With().Timestamp().Caller().Logger()
 		fmt.Printf("Logging to file %s\n", outputPath)
 	}
 
