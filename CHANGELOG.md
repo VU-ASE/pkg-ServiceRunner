@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.1](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.7.0...v2.7.1) (2024-02-28)
+
+
+### Bug Fixes
+
+* removed color package ([be0a4e2](https://github.com/VU-ASE/pkg-ServiceRunner/commit/be0a4e2c24a37561ab375a7435fe010047d263c3))
+
 ## [2.7.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.6.0...v2.7.0) (2024-02-28)
 
 
