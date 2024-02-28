@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.7.2...v2.8.0) (2024-02-28)
+
+
+### Features
+
+* added package functionality to communicate with the SystemManager ([3847d4e](https://github.com/VU-ASE/pkg-ServiceRunner/commit/3847d4e3e34fed3208175e86e13f3640fb116cb1))
+
 ## [2.7.2](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.7.1...v2.7.2) (2024-02-28)
 
 
