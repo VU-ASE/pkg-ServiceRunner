@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.2](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.7.1...v2.7.2) (2024-02-28)
+
+
+### Bug Fixes
+
+* limit filepath log to last three itesm ([f16010e](https://github.com/VU-ASE/pkg-ServiceRunner/commit/f16010eb7b52a65595877c3712fc3f90ffd2dbc8))
+
 ## [2.7.1](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.7.0...v2.7.1) (2024-02-28)
 
 
