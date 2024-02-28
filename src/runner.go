@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	pb_systemmanager_messages "github.com/VU-ASE/pkg-CommunicationDefinitions/v2/packages/go/systemmanager"
@@ -36,15 +37,14 @@ func getSystemManagerRepReqAddress() (string, error) {
 // Configures log level and output
 func setupLogging(debug bool, outputPath string, service serviceDefinition) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMs
-	// Log to stderr or to file
-	outputWriter := zerolog.ConsoleWriter{Out: os.Stderr}
-	outputWriter.FormatTimestamp = func(i interface{}) string {
-		return fmt.Sprintf("[%s]", service.Name)
+	// Set up custom caller prefix
+	zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
+		path := strings.Split(file, "/")
+		// only take the last three elements of the path
+		filepath := strings.Join(path[len(path)-3:], "/")
+		return fmt.Sprintf("[%s] %s:%d", service.Name, filepath, line)
 	}
-	// outputWriter.FormatMessage = func(i interface{}) string {
-	// 	// prepend the serivce name to the log message
-	// 	return fmt.Sprintf("[%s]: %s", service.Name, i)
-	// }
+	outputWriter := zerolog.ConsoleWriter{Out: os.Stderr}
 	log.Logger = log.Output(outputWriter).With().Caller().Logger()
 	if outputPath != "" {
 		file, err := os.OpenFile(
