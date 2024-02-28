@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.6.0...v2.7.0) (2024-02-28)
+
+
+### Features
+
+* added service prefix to stdout log messages ([39d3b52](https://github.com/VU-ASE/pkg-ServiceRunner/commit/39d3b52378d7cf9feca734133ac64394e6e2fcb3))
+
 ## [2.6.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.5.0...v2.6.0) (2024-02-28)
 
 
