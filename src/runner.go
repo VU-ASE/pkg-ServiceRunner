@@ -8,7 +8,6 @@ import (
 	"time"
 
 	pb_systemmanager_messages "github.com/VU-ASE/pkg-CommunicationDefinitions/v2/packages/go/systemmanager"
-	"github.com/fatih/color"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -40,8 +39,7 @@ func setupLogging(debug bool, outputPath string, service serviceDefinition) {
 	// Log to stderr or to file
 	outputWriter := zerolog.ConsoleWriter{Out: os.Stderr}
 	outputWriter.FormatTimestamp = func(i interface{}) string {
-		bold := color.New(color.Bold)
-		return bold.Sprintf("[%s]", service.Name)
+		return fmt.Sprintf("[%s]", service.Name)
 	}
 	// outputWriter.FormatMessage = func(i interface{}) string {
 	// 	// prepend the serivce name to the log message
