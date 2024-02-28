@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.5.0...v2.6.0) (2024-02-28)
+
+
+### Features
+
+* added caller info to terminal output ([73c7a13](https://github.com/VU-ASE/pkg-ServiceRunner/commit/73c7a131b4ca68ba8952cf9c0bad2cc19c910445))
+
 ## [2.5.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.4.1...v2.5.0) (2024-02-28)
 
 
