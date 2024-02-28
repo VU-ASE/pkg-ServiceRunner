@@ -37,7 +37,7 @@ func getSystemManagerRepReqAddress() (string, error) {
 func setupLogging(debug bool, outputPath string, service serviceDefinition) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMs
 	// Log to stderr or to file
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Caller().Logger()
 	if outputPath != "" {
 		file, err := os.OpenFile(
 			outputPath,
