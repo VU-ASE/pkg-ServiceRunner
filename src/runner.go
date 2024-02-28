@@ -12,6 +12,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const SERVER_ADDR = "tcp://localhost:1337"
+
 // The function that is called when a new tuning state is recevied
 type TuningStateCallbackFunction func(tuningState *pb_systemmanager_messages.TuningState)
 
@@ -25,8 +27,9 @@ type MainFunction func(serviceInformation ResolvedService, sysmanInformation Sys
 func getSystemManagerRepReqAddress() (string, error) {
 	serverAddr := os.Getenv("ASE_SYSMAN_SERVER_ADDRESS")
 	if serverAddr == "" {
-		return "", fmt.Errorf("Cannot reach system manager: environment variable ASE_SYSMAN_SERVER_ADDRESS is not set, do not know how to reach system manager :(")
+		log.Warn().Msg(fmt.Sprintf("Environment variable ASE_SYSMAN_SERVER_ADDRESS is not set, using default address: %s", SERVER_ADDR))
 	}
+	serverAddr = SERVER_ADDR
 	return serverAddr, nil
 }
 

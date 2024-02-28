@@ -14,9 +14,7 @@ build:
 # make start runargs="-debug" buildargs="-verbose"
 # make build buildargs="-verbose"
 #
-start: build
-	@echo "starting ${BINARY_NAME}"
-	./${BUILD_DIR}${BINARY_NAME} ${runargs}
+
 
 clean:
 	@echo "Cleaning all targets for ${BINARY_NAME}"
