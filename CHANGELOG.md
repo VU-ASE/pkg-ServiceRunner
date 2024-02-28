@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.5.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.4.1...v2.5.0) (2024-02-28)
+
+
+### Features
+
+* add caller information to logs ([70366d2](https://github.com/VU-ASE/pkg-ServiceRunner/commit/70366d283bc745aebd8ea01f14bd4d8562728662))
+* added support for error messages from System Manager ([66e1202](https://github.com/VU-ASE/pkg-ServiceRunner/commit/66e12025e95db8ffe865fb1fad09784bb28de1fb))
+
 ## [2.4.1](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.4.0...v2.4.1) (2024-02-28)
 
 
