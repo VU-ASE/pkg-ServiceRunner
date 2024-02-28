@@ -3,7 +3,7 @@ module github.com/VU-ASE/pkg-ServiceRunner/v2
 go 1.21.6
 
 require (
-	github.com/VU-ASE/pkg-CommunicationDefinitions/v2 v2.6.0
+	github.com/VU-ASE/pkg-CommunicationDefinitions/v2 v2.9.0
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/pebbe/zmq4 v1.2.10
 	github.com/rs/zerolog v1.31.0

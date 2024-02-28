@@ -164,6 +164,10 @@ func registerService(service serviceDefinition, sysmanReqRepAddr string) ([]Reso
 		log.Err(err).Msg("Error unmarshalling protobuf message")
 		return nil, err
 	}
+	errorMessage := response.GetError()
+	if errorMessage != nil {
+		return nil, fmt.Errorf("System manager denied service registration: %s", errorMessage.Message)
+	}
 	responseService := response.GetService()
 	if responseService == nil {
 		return nil, fmt.Errorf("Received empty response from system manager")
