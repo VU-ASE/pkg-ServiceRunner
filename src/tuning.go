@@ -2,6 +2,7 @@ package servicerunner
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 )
 
 // Listens on the broadcast channel for broadcasts from the system manager
-func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, initialTuning *pb_systemmanager_messages.TuningState, sysmanBroadcastAddr string) error {
+func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, initialTuning *pb_systemmanager_messages.TuningState, sysmanBroadcastAddr string, serviceOptions []option) error {
 	// Subscribe to the system manager
 	broadcast, err := zmq.NewSocket(zmq.SUB)
 	if err != nil {
@@ -44,16 +45,46 @@ func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, initia
 			continue
 		}
 
-		tuningState := parsedMsg.GetTuningState()
-		if tuningState == nil {
+		newTuningState := parsedMsg.GetTuningState()
+		if newTuningState == nil {
 			continue
 		}
-		merged := mergeTuningStates(initialTuning, tuningState)
+		// Strip the received tuning state of any parameters that are marked as "mutable: false" in the service.yaml file, not present in the service options, or have a different type than the one in the service options
+		// This is done to prevent the system manager from overwriting parameters that are not meant to be changed during runtime
+		newTuningStateParams := newTuningState.GetDynamicParameters()
+		if newTuningStateParams == nil {
+			continue
+		}
+		newTuningStateParams = slices.DeleteFunc(newTuningStateParams, func(tuningParam *pb_systemmanager_messages.TuningState_Parameter) bool {
+			// Does a parameter with the same key and type exist in the service options?
+			for _, opt := range serviceOptions {
+				// Does this parameter exist in the service options?
+				if tuningParameterMatchesOption(tuningParam, opt) {
+					return !opt.Mutable // delete if not mutable
+				}
+			}
+
+			return true // delete anyway, as it is not present in the service options
+		})
+		newTuningState.DynamicParameters = newTuningStateParams
+		merged := mergeTuningStates(initialTuning, newTuningState)
 
 		// Send the tuning state to the callback function
 		log.Debug().Msg("Received tuning state broadcast from system manager")
 		onTuningState(merged)
 	}
+}
+
+// This utility function will check if the type and name of a tuning parameter matches a given option as defined in the service.yaml file
+// This is used to filter out parameters that are not being used by the service during runtime
+func tuningParameterMatchesOption(tuningParam *pb_systemmanager_messages.TuningState_Parameter, opt option) bool {
+	if tuningParam == nil {
+		return false
+	}
+
+	// Get the key and type of the tuning parameter
+	key, keyType := getKeyAndType(tuningParam)
+	return key == opt.Name && keyType == opt.Type
 }
 
 func requestTuningState(sysmanReqRepAddr string) (*pb_systemmanager_messages.TuningState, error) {
@@ -189,10 +220,8 @@ func getUnsetOptions(tuningState *pb_systemmanager_messages.TuningState, options
 		switch opt.Type {
 		case "string":
 			_, err = GetTuningString(opt.Name, tuningState)
-
 		case "int":
 			_, err = GetTuningInt(opt.Name, tuningState)
-
 		case "float":
 			_, err = GetTuningFloat(opt.Name, tuningState)
 		default:
@@ -246,7 +275,8 @@ func mergeTuningStates(old *pb_systemmanager_messages.TuningState, new *pb_syste
 		Timestamp:         new.Timestamp,
 		DynamicParameters: make([]*pb_systemmanager_messages.TuningState_Parameter, 0),
 	}
-	// Add all the old parameters that are not in the new tuning state
+	// Tuning states can be partial. This will make sure that all the old parameters are added to the merged tuning state,
+	// even if they are not present in the received new tuning state
 	for _, param := range old.DynamicParameters {
 		key, keyType := getKeyAndType(param)
 		if !keyExists(key, keyType, new) {

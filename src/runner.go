@@ -170,7 +170,7 @@ func Run(main MainFunction, onTuningState TuningStateCallbackFunction, disableRe
 		// Listen for tuning state updates, and callback when a new tuning state is received
 		go func() {
 			for {
-				err = listenForTuningBroadcasts(onTuningState, initialTuning, sysmanInfo.BroadcastAddress)
+				err = listenForTuningBroadcasts(onTuningState, initialTuning, sysmanInfo.BroadcastAddress, service.Options)
 				if err != nil {
 					log.Err(err).Msg("Error listening for tuning state broadcasts")
 				}
