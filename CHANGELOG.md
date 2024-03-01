@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.8.0...v2.9.0) (2024-03-01)
+
+
+### Features
+
+* tuningState now respects "mutable" in service.yaml options ([404e794](https://github.com/VU-ASE/pkg-ServiceRunner/commit/404e7942b99dea0c90c3f9408d07936d0eef9ed7))
+
 ## [2.8.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.7.2...v2.8.0) (2024-02-28)
 
 
