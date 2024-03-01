@@ -257,11 +257,11 @@ func keyExists(key string, keyType string, tuningState *pb_systemmanager_message
 			continue
 		}
 
-		if tuningValue.GetString_().Key == key && keyType == "string" {
+		if tuningValue.GetString_() != nil && tuningValue.GetString_().Key == key && keyType == "string" {
 			return true
-		} else if tuningValue.GetInt().Key == key && keyType == "int" {
+		} else if tuningValue.GetInt() != nil && tuningValue.GetInt().Key == key && keyType == "int" {
 			return true
-		} else if tuningValue.GetFloat().Key == key && keyType == "float" {
+		} else if tuningValue.GetFloat() != nil && tuningValue.GetFloat().Key == key && keyType == "float" {
 			return true
 		}
 	}
