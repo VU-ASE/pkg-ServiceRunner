@@ -29,11 +29,15 @@ func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, initia
 		return err
 	}
 
+	log.Info().Msgf("Initial tuning state: %v", initialTuning)
+
 	// Keep track of changes
 	currentTuningState := initialTuning
 
 	// main receiver loop
 	for {
+		log.Info().Msgf("Current tuning state: %v", initialTuning)
+
 		// Receive the tuning state
 		msg, err := broadcast.RecvBytes(0)
 		if err != nil {
@@ -52,7 +56,10 @@ func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, initia
 		if newTuningState == nil {
 			continue
 		}
+		log.Info().Msgf("Received tuning state: %v", initialTuning)
+
 		merged := createUpdatedTuningState(currentTuningState, newTuningState, serviceOptions)
+		log.Info().Msgf("Merged to tuning state: %v", initialTuning)
 
 		// Send the tuning state to the callback function
 		log.Debug().Msg("Received tuning state broadcast from system manager")
