@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.3](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.9.2...v2.9.3) (2024-03-01)
+
+
+### Bug Fixes
+
+* remove tuning parameters that are not specified in service.yaml options ([601953d](https://github.com/VU-ASE/pkg-ServiceRunner/commit/601953d47571fa3e0be257a18cd1d8dd154a9433))
+
 ## [2.9.2](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.9.1...v2.9.2) (2024-03-01)
 
 
