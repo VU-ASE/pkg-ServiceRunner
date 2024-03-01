@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.2](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.9.1...v2.9.2) (2024-03-01)
+
+
+### Bug Fixes
+
+* segfault on tuning state update ([4c2330f](https://github.com/VU-ASE/pkg-ServiceRunner/commit/4c2330fc4fac37274d2457cccb000f4c767eb324))
+
 ## [2.9.1](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.9.0...v2.9.1) (2024-03-01)
 
 
