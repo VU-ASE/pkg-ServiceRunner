@@ -29,6 +29,9 @@ func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, initia
 		return err
 	}
 
+	// Keep track of changes
+	currentTuningState := initialTuning
+
 	// main receiver loop
 	for {
 		// Receive the tuning state
@@ -49,39 +52,52 @@ func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, initia
 		if newTuningState == nil {
 			continue
 		}
-		// Strip the received tuning state of any parameters that are marked as "mutable: false" in the service.yaml file, not present in the service options, or have a different type than the one in the service options
-		// This is done to prevent the system manager from overwriting parameters that are not meant to be changed during runtime
-		newTuningStateParams := newTuningState.GetDynamicParameters()
-		if newTuningStateParams == nil {
-			continue
-		}
-		newTuningStateParams = slices.DeleteFunc(newTuningStateParams, func(tuningParam *pb_systemmanager_messages.TuningState_Parameter) bool {
-			// Does a parameter with the same key and type exist in the service options?
-			for _, opt := range serviceOptions {
-				// Does this parameter exist in the service options?
-				if tuningParameterMatchesOption(tuningParam, opt) {
-					return !opt.Mutable // delete if not mutable
-				}
-			}
-
-			return true // delete anyway, as it is not present in the service options
-		})
-		newTuningState.DynamicParameters = newTuningStateParams
-		merged := mergeTuningStates(initialTuning, newTuningState)
-		// Delete all parameters that are not present in the service options
-		merged.DynamicParameters = slices.DeleteFunc(merged.DynamicParameters, func(tuningParam *pb_systemmanager_messages.TuningState_Parameter) bool {
-			for _, opt := range serviceOptions {
-				if tuningParameterMatchesOption(tuningParam, opt) {
-					return false
-				}
-			}
-			return true
-		})
+		merged := createUpdatedTuningState(currentTuningState, newTuningState, serviceOptions)
 
 		// Send the tuning state to the callback function
 		log.Debug().Msg("Received tuning state broadcast from system manager")
 		onTuningState(merged)
+		currentTuningState = merged
 	}
+}
+
+// This will combine the current state with the new state, and return the combined state
+// note: it will edit the new state in place
+func createUpdatedTuningState(currentTuning *pb_systemmanager_messages.TuningState, receivedTuning *pb_systemmanager_messages.TuningState, serviceOptions []option) *pb_systemmanager_messages.TuningState {
+	if currentTuning == nil || receivedTuning == nil {
+		return nil
+	}
+
+	// Strip the received tuning state of any parameters that are marked as "mutable: false" in the service.yaml file, not present in the service options, or have a different type than the one in the service options
+	// This is done to prevent the system manager from overwriting parameters that are not meant to be changed during runtime
+	newTuningStateParams := receivedTuning.GetDynamicParameters()
+	if newTuningStateParams == nil {
+		return nil
+	}
+	newTuningStateParams = slices.DeleteFunc(newTuningStateParams, func(tuningParam *pb_systemmanager_messages.TuningState_Parameter) bool {
+		// Does a parameter with the same key and type exist in the service options?
+		for _, opt := range serviceOptions {
+			// Does this parameter exist in the service options?
+			if tuningParameterMatchesOption(tuningParam, opt) {
+				return !opt.Mutable // delete if not mutable
+			}
+		}
+
+		return true // delete anyway, as it is not present in the service options
+	})
+	receivedTuning.DynamicParameters = newTuningStateParams
+	merged := mergeTuningStates(currentTuning, receivedTuning)
+	// Delete all parameters that are not present in the service options
+	merged.DynamicParameters = slices.DeleteFunc(merged.DynamicParameters, func(tuningParam *pb_systemmanager_messages.TuningState_Parameter) bool {
+		for _, opt := range serviceOptions {
+			if tuningParameterMatchesOption(tuningParam, opt) {
+				return false
+			}
+		}
+		return true
+	})
+
+	return merged
 }
 
 // This utility function will check if the type and name of a tuning parameter matches a given option as defined in the service.yaml file
