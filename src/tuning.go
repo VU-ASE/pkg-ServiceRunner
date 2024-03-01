@@ -253,6 +253,10 @@ func keyExists(key string, keyType string, tuningState *pb_systemmanager_message
 		return false
 	}
 	for _, tuningValue := range tuningState.DynamicParameters {
+		if tuningValue == nil {
+			continue
+		}
+
 		if tuningValue.GetString_().Key == key && keyType == "string" {
 			return true
 		} else if tuningValue.GetInt().Key == key && keyType == "int" {
