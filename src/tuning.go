@@ -68,6 +68,15 @@ func listenForTuningBroadcasts(onTuningState TuningStateCallbackFunction, initia
 		})
 		newTuningState.DynamicParameters = newTuningStateParams
 		merged := mergeTuningStates(initialTuning, newTuningState)
+		// Delete all parameters that are not present in the service options
+		merged.DynamicParameters = slices.DeleteFunc(merged.DynamicParameters, func(tuningParam *pb_systemmanager_messages.TuningState_Parameter) bool {
+			for _, opt := range serviceOptions {
+				if tuningParameterMatchesOption(tuningParam, opt) {
+					return false
+				}
+			}
+			return true
+		})
 
 		// Send the tuning state to the callback function
 		log.Debug().Msg("Received tuning state broadcast from system manager")
