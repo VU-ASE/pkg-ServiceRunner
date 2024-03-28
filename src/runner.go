@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	build_debug "runtime/debug"
+
 	pb_systemmanager_messages "github.com/VU-ASE/pkg-CommunicationDefinitions/v2/packages/go/systemmanager"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -67,6 +69,19 @@ func setupLogging(debug bool, outputPath string, service serviceDefinition) {
 	}
 
 	log.Info().Msg("Logger was set up")
+
+	if debug {
+		log.Debug().Msg("Listing dependencies of this binary: ")
+		buildInfo, ok := build_debug.ReadBuildInfo()
+		if !ok {
+			log.Warn().Msg("Failed to read build info")
+		} else {
+			for _, dep := range buildInfo.Deps {
+				s := fmt.Sprintf("  dep: %s@%s", dep.Path, dep.Version)
+				log.Debug().Msg(s)
+			}
+		}
+	}
 }
 
 // Used to start the program with the correct arguments and logging, with service discovery registration and all dependencies resolved
