@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.0](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.9.4...v2.10.0) (2024-03-28)
+
+
+### Features
+
+* with -debug service runner will now print list of all dependencies and their versions ([b7fd3e3](https://github.com/VU-ASE/pkg-ServiceRunner/commit/b7fd3e3ed22dd1aac2cf0e70e3ac1bc89a62dc9d))
+
 ## [2.9.4](https://github.com/VU-ASE/pkg-ServiceRunner/compare/v2.9.3...v2.9.4) (2024-03-01)
 
 
